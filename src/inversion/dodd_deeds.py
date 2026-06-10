@@ -76,11 +76,16 @@ class DoddDeedsModel:
 
         def _integrand_part(k):
             j2 = self._j_squared(k, c.r_inner, c.r_outer) / k ** 5
-            gamma = np.sqrt(k * k + 1j * omega * mu * sigma / mu0)
-            # Reflection coefficient for a non-magnetic half-space.
-            # Physics requires (k - gamma)/(k + gamma): eddy currents reduce the
-            # net inductance and add resistance. (Verified against an independent
-            # axisymmetric FEM solve; see src/fem_impedance/coil_impedance.py.)
+            # Propagation parameter in the conductor: gamma = sqrt(k^2 + j*omega*mu*sigma),
+            # where mu = mu_r * mu0 (material.mu). The j*omega*mu*sigma term has units
+            # of 1/m^2, matching k^2. (An earlier version divided by mu0, which made
+            # the conductor look near-perfect: Gamma -> -1, correct reactance but
+            # ~800x too little loss. The corrected form matches the FEM resistance to
+            # <1%; see src/fem_impedance/coil_impedance.py.)
+            gamma = np.sqrt(k * k + 1j * omega * mu * sigma)
+            # Reflection coefficient for a non-magnetic half-space; physics requires
+            # (k - gamma)/(k + gamma) so eddy currents reduce inductance and add
+            # resistance.
             reflection = (k - gamma) / (k + gamma)
             exp_part = (2 * l + (1.0 / k) * (
                 2 * np.exp(-k * l) - 2

@@ -49,8 +49,10 @@ optimal-design procedure for directional-probe sets (a conductivity ``rosette'')
 and (iv) a regularised, prior-informed inversion that fuses the measurements with
 a thermomechanical process simulation (data assimilation). Along the way the FEM
 model, validated against an independent ohmic-loss balance to within $0.000\%$,
-revealed and corrected a sign error in the analytical reflection coefficient of
-the classical Dodd--Deeds model. On synthetic LPBF builds, a single normal coil
+revealed and corrected two errors in the classical Dodd--Deeds analytical model
+--- a reflection-coefficient sign and a units error in the propagation parameter
+--- after which the analytical and FEM impedances agree to within $1\%$ in
+resistance and $3\%$ in reactance. On synthetic LPBF builds, a single normal coil
 resolves one strain degree of freedom, an in-plane rosette resolves three, and a
 six-direction tilted set resolves all six; the prior supplies the components that
 the probes cannot observe. The complete workflow is implemented in an open
@@ -163,18 +165,27 @@ mesh convergence           & order 3 $\approx$ order 4 & 5 significant figures\\
 
 The model is mesh-converged and internally exact: the resistance extracted from
 the flux-linkage impedance equals a direct volume integral of the ohmic loss
-$\tfrac12\!\int\sigma|E|^2\,\mathrm{d}V$ to within $0.000\%$
-(Table~\ref{tab:fem}). With the corrected sign \eqref{eq:refl} the FEM and
-analytical normalised reactances agree to $6.8\%$, the residual being the finite
-FEM truncation versus the analytical infinite half-space (Fig.~\ref{fig:fem}).
+$\tfrac12\!\int\sigma|E|^2\,\mathrm{d}V$ to within $0.000\%$ (Table~\ref{tab:fem}).
+Cross-validation against this FEM also exposed a units error in the propagation
+parameter $\gamma$ (a missing factor of $\mu_0$, so that $\omega\mu\sigma$ no
+longer had units of $\mathrm{m}^{-2}$): it made the conductor appear nearly
+perfect ($\Gamma\!\to\!-1$), yielding an essentially correct reactance but
+suppressing the predicted loss by nearly three orders of magnitude. With both the
+reflection sign \eqref{eq:refl} and the units corrected, the analytical and FEM
+\emph{normalised} impedances agree to $0.9\%$ in resistance and $2.8\%$ in
+reactance (Fig.~\ref{fig:fem}); the small reactance residual is the finite FEM
+truncation versus the analytical half-space. The analytical integral
+\eqref{eq:dd} is converged for $k_{\max}\!\sim\!6000$, within a stable plateau
+before the oscillatory Bessel kernel degrades the quadrature.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.92\textwidth]{fem_impedance_demo.png}
 \caption{Coil impedance analysis. Analytical conductivity- and frequency-sweep
 trajectories (top, bottom-left) and the FEM-vs-analytical normalised impedance
-(bottom-right). After the reflection-sign correction the two are
-sign-consistent; the reactance agrees to within domain-truncation error.}
+(bottom-right). After correcting the reflection sign and a units error in the
+propagation parameter, the FEM and analytical normalised impedances agree in
+both resistance ($0.9\%$) and reactance ($2.8\%$).}
 \label{fig:fem}
 \end{figure}
 
@@ -360,17 +371,22 @@ versus build height (bottom-left) and the per-component data resolution
 \end{figure}
 
 \section{Discussion}
-Three limitations frame the path to experiment. First, while the FEM reactance
-matches the analytical model, the normalised \emph{resistance} differs by a large
-factor; since the FEM resistance is independently verified by the ohmic-loss
-balance, the analytical resistive term (e.g.\ its high-wavenumber integration) is
-the likely culprit and warrants study. Second, surface ECT accesses in-plane
-current paths much more readily than out-of-plane ones, so $\varepsilon_{zz}$ and
-the out-of-plane shears will in practice lean on the simulation prior or on
-multi-frequency depth profiling; edge access or tilted probes mitigate this.
-Third, the tensor model needs calibration: multi-orientation tensile tests are
-required to populate $\kappa_\parallel,\kappa_\perp$ (and the as-built anisotropy
-of $\sigma_0$ in columnar LPBF microstructures).
+The cross-validation between the analytical and FEM forward models proved
+unexpectedly valuable, exposing two independent errors in a widely used
+analytical formulation (a reflection-coefficient sign and a units error in the
+propagation parameter) that a self-consistent synthetic round trip would never
+reveal; after correction the two models agree to within $1\%$ in resistance and
+$3\%$ in reactance. This underlines the importance of dissimilar, redundant
+forward models when an inverse method is to be trusted on real data.
+
+Two limitations frame the path to experiment. First, surface ECT accesses
+in-plane current paths much more readily than out-of-plane ones, so
+$\varepsilon_{zz}$ and the out-of-plane shears will in practice lean on the
+simulation prior or on multi-frequency depth profiling; edge access or tilted
+probes mitigate this. Second, the tensor model needs calibration:
+multi-orientation tensile tests are required to populate
+$\kappa_\parallel,\kappa_\perp$ (and the as-built anisotropy of $\sigma_0$ in
+columnar LPBF microstructures).
 
 \section{Conclusion}
 We have shown how to progress from a scalar strain--conductivity relation to a
@@ -379,10 +395,12 @@ impedance constrains a \emph{projection} of the conductivity tensor; resolving
 the strain tensor then requires measurement diversity (a directional/tilted probe
 ``rosette'', optionally multi-frequency) and, for the components that remain
 unobservable, a physics-based prior fused by regularised inversion. The framework
-is fully implemented, validated, and --- as a by-product --- corrects a sign error
-in the classical analytical model. Future work targets the resistive discrepancy,
-experimental calibration of the elastoresistivity constants, and deployment of
-the pipeline for in-situ monitoring.
+is fully implemented, validated, and --- as a by-product of cross-validating two
+dissimilar forward models --- corrects two errors (a reflection sign and a units
+error in the propagation parameter) in the classical analytical model, after
+which the two models agree to within $1\%$ in resistance. Future work targets
+experimental calibration of the elastoresistivity constants and deployment of the
+pipeline for in-situ monitoring.
 
 \begin{thebibliography}{9}
 \bibitem{dodd1968} C.\,V.\ Dodd and W.\,E.\ Deeds, ``Analytical solutions to

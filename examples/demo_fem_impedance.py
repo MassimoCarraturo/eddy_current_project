@@ -92,8 +92,10 @@ def run_fem_demo(coil, material):
         print(f"\n  Analytical normalised Z = {z_norm_ana:.6e}")
         im_err = (abs(z_norm_fem.imag - z_norm_ana.imag)
                   / abs(z_norm_ana.imag) * 100)
-        print(f"  Reactance agreement (Im): {im_err:.2f}%  "
-              f"(residual ~ domain truncation)")
+        re_err = (abs(z_norm_fem.real - z_norm_ana.real)
+                  / abs(z_norm_ana.real) * 100)
+        print(f"  Reactance agreement (Im): {im_err:.2f}%")
+        print(f"  Resistance agreement (Re): {re_err:.2f}%")
         same_sign = np.sign(z_norm_fem.imag) == np.sign(z_norm_ana.imag)
         print(f"  Sign-consistent with FEM : {same_sign}")
 
