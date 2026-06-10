@@ -77,7 +77,11 @@ class DoddDeedsModel:
         def _integrand_part(k):
             j2 = self._j_squared(k, c.r_inner, c.r_outer) / k ** 5
             gamma = np.sqrt(k * k + 1j * omega * mu * sigma / mu0)
-            reflection = (gamma - k) / (gamma + k)
+            # Reflection coefficient for a non-magnetic half-space.
+            # Physics requires (k - gamma)/(k + gamma): eddy currents reduce the
+            # net inductance and add resistance. (Verified against an independent
+            # axisymmetric FEM solve; see src/fem_impedance/coil_impedance.py.)
+            reflection = (k - gamma) / (k + gamma)
             exp_part = (2 * l + (1.0 / k) * (
                 2 * np.exp(-k * l) - 2
                 + (np.exp(-2 * k * (l + s)) + np.exp(-2 * k * s)

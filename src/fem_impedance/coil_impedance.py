@@ -1,15 +1,41 @@
 """
 FEM-based coil impedance computation using NGSolve.
 
-Extends the thesis's current_loop2D.py (single current loop) to compute
-the impedance of a multi-turn cylindrical coil by integrating the electric
-field E_phi over the coil cross-section, following Eq. 4.53 from the thesis:
+Solves the time-harmonic eddy-current problem for an axisymmetric multi-turn
+coil above a conductive half-space and extracts the coil impedance from the
+magnetic vector potential.  This enables impedance computation for geometries
+where the analytical Dodd-Deeds model breaks down (finite-thickness plates,
+layered media, defects).
 
-    V = -(2π n) / [l (r_o - r_i)] ∫∫ ρ E_phi(ρ, z) dρ dz
-    Z = V / I
+Formulation
+-----------
+Unknown: the azimuthal magnetic vector potential A_phi(rho, z) (complex).
+The time-harmonic curl-curl equation in cylindrical (axisymmetric) coordinates,
+written in the standard symmetric weak form, is
 
-This enables handling geometries where the analytical Dodd-Deeds model
-breaks down (finite-thickness plates, layered media, defects).
+    (1/mu) integral [ grad(A).grad(v) + A v / rho^2 ] rho drho dz
+    + j w integral sigma A v rho drho dz
+    = integral J_s v rho drho dz                          for all test v,
+
+with Dirichlet condition A = 0 on the symmetry axis (rho = 0, where the
+azimuthal component must vanish) and on the truncated outer boundary.
+
+The driving coil is modelled as a uniform azimuthal current density
+J_s = n I / S_coil over the winding cross-section S_coil = (r_o - r_i) * length.
+
+Impedance
+---------
+The flux linkage of the whole winding is
+
+    Lambda = (n / S_coil) integral_coil (2 pi rho A) drho dz,
+
+and the coil impedance follows from Z = j w Lambda / I.  The self-impedance
+Z0 is obtained from the same model with sigma = 0 everywhere (coil in free
+space), giving a self-consistent normalisation
+
+    Z_norm = (Z0 - Z) / Im(Z0).
+
+This mirrors the definition used by the analytical model in dodd_deeds.py.
 """
 
 import numpy as np
@@ -22,18 +48,18 @@ from ..utils.common import ECTCoilParams, MaterialParams, mu0
 class FEMCoilImpedance:
     """Compute coil impedance from a 2D axisymmetric FEM solution.
 
-    This class sets up the NGSolve problem, solves for E_phi, and integrates
-    over the coil cross-section to obtain impedance.  It requires NGSolve to
-    be installed (optional dependency).
+    Requires NGSolve (optional dependency). Install via ``pip install ngsolve``.
     """
 
     coil: ECTCoilParams
     material: MaterialParams
-    domain_r_max: float = 0.05
-    domain_z_top: float = 0.03
-    domain_z_bot: float = -0.02
-    gauss_sigma: float = 1e-4
-    max_mesh_size: float = 0.005
+    domain_r_max: float = 0.05      # Radial extent of the domain [m]
+    domain_z_top: float = 0.03      # Top of the air region [m]
+    domain_z_bot: float = -0.02     # Bottom of the conductor [m]
+    max_mesh_size: float = 0.004    # Background mesh size [m]
+    order: int = 3                  # FE polynomial order
+    skin_mesh_div: float = 3.0      # Skin-layer mesh size = skin_depth / div
+    coil_mesh_size: float = 8e-4    # Mesh size inside the coil winding [m]
 
     def _check_ngsolve(self):
         try:
@@ -45,196 +71,163 @@ class FEMCoilImpedance:
                 "Install it via: pip install ngsolve"
             )
 
-    def setup_and_solve(self) -> dict:
-        """Build the FEM model, solve, and return the solution + mesh.
+    # -- Geometry & mesh -----------------------------------------------------
 
-        Returns:
-            Dictionary with keys: 'mesh', 'solution', 'V' (FE space),
-            'impedance', 'impedance_normalized'.
+    def _build_mesh(self):
+        from netgen.geom2d import CSG2d, Rectangle
+        from ngsolve import Mesh
+
+        c = self.coil
+        delta = self.material.skin_depth(c.omega)
+        # Conductor "skin" block: a few skin depths thick (at least 1 mm) so the
+        # exponential eddy-current decay is captured by the refined mesh.
+        skin = float(max(5.0 * delta, 1e-3))
+        z0c = float(c.liftoff)
+        z1c = float(c.liftoff + c.length)
+        R = float(self.domain_r_max)
+
+        geo = CSG2d()
+
+        cond_skin = Rectangle(
+            pmin=(0, -skin), pmax=(R, 0), mat="conductor",
+            left="axis", right="outer",
+        ).Maxh(float(delta / self.skin_mesh_div))
+        cond_bulk = Rectangle(
+            pmin=(0, float(self.domain_z_bot)), pmax=(R, -skin), mat="conductor",
+            left="axis", right="outer", bottom="outer",
+        ).Maxh(float(self.max_mesh_size))
+        air = Rectangle(
+            pmin=(0, 0), pmax=(R, float(self.domain_z_top)), mat="air",
+            left="axis", right="outer", top="outer",
+        ).Maxh(float(self.max_mesh_size))
+        coil_rect = Rectangle(
+            pmin=(float(c.r_inner), z0c), pmax=(float(c.r_outer), z1c),
+            mat="coil",
+        ).Maxh(float(self.coil_mesh_size))
+
+        geo.Add(cond_bulk + cond_skin)
+        geo.Add(air - coil_rect)
+        geo.Add(coil_rect)
+
+        return Mesh(geo.GenerateMesh(maxh=float(self.max_mesh_size)))
+
+    # -- Solve ---------------------------------------------------------------
+
+    def setup_and_solve(self) -> dict:
+        """Build the FEM model, solve, and return the solution and impedance.
+
+        Returns a dictionary with keys:
+            'mesh', 'V', 'solution'            : NGSolve mesh, space, A over conductor
+            'impedance'                        : Z over the conductor (complex)
+            'z0'                               : self-impedance Z0 in free space
+            'impedance_normalized'             : (Z0 - Z) / Im(Z0)
+            'resistance_check'                 : R from direct ohmic-loss integral
         """
         self._check_ngsolve()
 
-        from netgen.geom2d import SplineGeometry
         from ngsolve import (
-            Mesh, H1, BilinearForm, LinearForm, GridFunction,
-            CoefficientFunction, Integrate, dx,
-            grad, exp, sqrt,
+            H1, BilinearForm, LinearForm, GridFunction, Integrate,
+            grad, dx, Conj, x as rho,
         )
 
         c = self.coil
         m = self.material
         omega = c.omega
-        sig = self.gauss_sigma
 
-        delta = m.skin_depth(omega)
-        mesh_size_skin = delta / 3.0
-        skin_layer = 4 * delta
+        mesh = self._build_mesh()
+        V = H1(mesh, order=self.order, complex=True, dirichlet="axis|outer")
 
-        # -- Geometry: three stacked regions in the rho-z plane --
-        geo = SplineGeometry()
+        S_coil = (c.r_outer - c.r_inner) * c.length
+        I_source = 1.0
+        J0 = c.n_turns * I_source / S_coil
+        coil_cf = mesh.MaterialCF({"coil": 1.0}, default=0.0)
 
-        # Conductor bulk (below skin layer)
-        geo.AddRectangle(
-            p1=(0, self.domain_z_bot),
-            p2=(self.domain_r_max, -skin_layer),
-            leftdomain=1, rightdomain=0,
-            bcs=("outer", "outer", "default", "axis"),
-            maxh=self.max_mesh_size,
-        )
+        def solve_for_sigma(sigma_value):
+            sigma_cf = mesh.MaterialCF({"conductor": sigma_value}, default=0.0)
+            A = V.TrialFunction()
+            v = V.TestFunction()
 
-        # Conductor skin layer (refined)
-        geo.AddRectangle(
-            p1=(0, -skin_layer),
-            p2=(self.domain_r_max, 0),
-            leftdomain=1, rightdomain=0,
-            bcs=("default", "outer", "interface_cond", "axis"),
-            maxh=mesh_size_skin,
-        )
+            a = BilinearForm(V, symmetric=True, check_unused=False)
+            a += (1.0 / mu0) * (grad(A) * grad(v) + A * v / rho ** 2) * rho * dx
+            a += 1j * omega * sigma_cf * A * v * rho * dx
+            a.Assemble()
 
-        # Air gap (between conductor and coil)
-        geo.AddRectangle(
-            p1=(0, 0),
-            p2=(self.domain_r_max, c.liftoff),
-            leftdomain=2, rightdomain=0,
-            bcs=("interface_cond", "outer", "interface_coil", "axis"),
-            maxh=0.001,
-        )
+            f = LinearForm(V)
+            f += J0 * coil_cf * v * rho * dx
+            f.Assemble()
 
-        # Air above coil
-        geo.AddRectangle(
-            p1=(0, c.liftoff),
-            p2=(self.domain_r_max, self.domain_z_top),
-            leftdomain=3, rightdomain=0,
-            bcs=("interface_coil", "outer", "outer", "axis"),
-            maxh=self.max_mesh_size,
-        )
+            gfu = GridFunction(V)
+            gfu.vec.data = a.mat.Inverse(V.FreeDofs(), inverse="umfpack") * f.vec
 
-        # Refine around the coil source location
-        r_coil = c.r_mean
-        z_coil = c.liftoff + c.length / 2
-        refine_radius = 3 * sig
-        geo.AddCircle(
-            c=(r_coil, z_coil),
-            r=refine_radius,
-            leftdomain=0, rightdomain=0,
-            maxh=sig,
-        )
+            # Flux linkage Lambda = (n/S) * 2pi * integral_coil rho * A
+            lam = (c.n_turns / S_coil) * 2 * np.pi * Integrate(coil_cf * rho * gfu, mesh)
+            impedance = 1j * omega * lam / I_source
+            return gfu, impedance, sigma_cf
 
-        geo.SetMaterial(1, "conductor")
-        geo.SetMaterial(2, "air_gap")
-        geo.SetMaterial(3, "air_above")
+        gfu_air, z0, _ = solve_for_sigma(0.0)
+        gfu_cond, z_cond, sigma_cf = solve_for_sigma(m.sigma)
 
-        mesh = Mesh(geo.GenerateMesh(maxh=self.max_mesh_size))
+        # Independent cross-check: resistance from ohmic loss P = 1/2 integral sigma |E|^2 dV
+        abs_e2 = omega ** 2 * (gfu_cond * Conj(gfu_cond)).real
+        p_ohmic = Integrate(0.5 * sigma_cf * abs_e2 * 2 * np.pi * rho, mesh)
+        r_check = p_ohmic / (0.5 * I_source ** 2)
 
-        # -- FE space and bilinear form --
-        V = H1(mesh, order=2, complex=True)
-        E_trial = V.TrialFunction()
-        v = V.TestFunction()
-
-        # NGSolve uses x,y for the 2D mesh — here x=rho, y=z
-        from ngsolve import x as rho, y as z
-
-        sigma_cf = mesh.MaterialCF({
-            "conductor": m.sigma,
-            "air_gap": 0,
-            "air_above": 0,
-        })
-        k2 = 1j * omega * m.mu * sigma_cf
-
-        # Axisymmetric weak form: -∫(∇E·∇v + (1/ρ²)Ev + k²Ev) ρ dρdz = ∫ f·v ρ dρdz
-        a = BilinearForm(V, symmetric=True)
-        a += (-grad(E_trial) * grad(v) - (1 / rho ** 2) * E_trial * v
-              - k2 * E_trial * v) * rho * dx
-        a.Assemble()
-
-        # Source: Gaussian-regularised multi-turn coil
-        # The coil extends from r_inner to r_outer and from liftoff to liftoff+length.
-        # We model it as a superposition spread over the cross-section.
-        r_c = (c.r_inner + c.r_outer) / 2
-        z_c = c.liftoff + c.length / 2
-        g = exp(-((rho - r_c) ** 2 + (z - z_c) ** 2) / (2 * sig ** 2))
-        int_g = Integrate(g * rho, mesh)
-        g_norm = g / int_g
-
-        I_source = 1e-3  # 1 mA reference current
-
-        f = LinearForm(V)
-        f += (1j * omega * m.mu * I_source * r_c) * g_norm * v * rho * dx
-        f.Assemble()
-
-        # -- Solve --
-        gfu = GridFunction(V)
-        gfu.vec.data = a.mat.Inverse(V.FreeDofs()) * f.vec
-
-        # -- Compute coil impedance by integration over coil cross-section --
-        # V = -(2π n) / [l(r_o - r_i)] ∫∫ ρ E_phi dρ dz  over coil region
-        # We approximate by sampling E_phi on a grid over the coil cross-section.
-        impedance = self._compute_impedance_from_field(
-            gfu, mesh, c, I_source
-        )
-
-        # Normalised impedance
-        z0 = self._compute_self_impedance(c, I_source)
-        z_norm = (z0 - impedance) / z0.imag if z0.imag != 0 else 0
+        z_norm = (z0 - z_cond) / z0.imag if z0.imag != 0 else 0.0
 
         return {
             "mesh": mesh,
-            "solution": gfu,
             "V": V,
-            "impedance": impedance,
-            "impedance_normalized": z_norm,
+            "solution": gfu_cond,
+            "solution_air": gfu_air,
+            "impedance": z_cond,
             "z0": z0,
+            "impedance_normalized": z_norm,
+            "resistance_check": r_check,
         }
 
-    def _compute_impedance_from_field(
-        self, gfu, mesh, coil: ECTCoilParams, I_source: float,
-        n_rho: int = 30, n_z: int = 30,
-    ) -> complex:
-        """Integrate E_phi over the coil cross-section to get impedance.
+    # -- Post-processing helpers --------------------------------------------
 
-        Uses numerical quadrature over a regular grid in the coil region.
-        Z = V/I = -(2π n) / [l(r_o - r_i) I] ∫∫ ρ E_phi(ρ,z) dρ dz
+    def impedance_vs_sigma(self, sigma_array) -> np.ndarray:
+        """Compute the normalised impedance for several conductivities.
+
+        Reuses one mesh and the free-space (sigma=0) reference solve, then
+        re-solves the conductor problem for each conductivity.
         """
-        rho_vals = np.linspace(coil.r_inner, coil.r_outer, n_rho)
-        z_vals = np.linspace(coil.liftoff, coil.liftoff + coil.length, n_z)
+        self._check_ngsolve()
+        from ngsolve import (
+            H1, BilinearForm, LinearForm, GridFunction, Integrate,
+            grad, dx, x as rho,
+        )
 
-        d_rho = (coil.r_outer - coil.r_inner) / (n_rho - 1)
-        d_z = coil.length / (n_z - 1)
+        c = self.coil
+        omega = c.omega
+        mesh = self._build_mesh()
+        V = H1(mesh, order=self.order, complex=True, dirichlet="axis|outer")
 
-        integral = 0.0 + 0.0j
-        for rr in rho_vals:
-            for zz in z_vals:
-                try:
-                    e_val = complex(gfu(mesh(rr, zz)))
-                    integral += rr * e_val * d_rho * d_z
-                except Exception:
-                    pass
+        S_coil = (c.r_outer - c.r_inner) * c.length
+        I_source = 1.0
+        J0 = c.n_turns * I_source / S_coil
+        coil_cf = mesh.MaterialCF({"coil": 1.0}, default=0.0)
 
-        voltage = -2 * np.pi * coil.n_turns / (
-            coil.length * (coil.r_outer - coil.r_inner)
-        ) * integral
+        def solve_for_sigma(sigma_value):
+            sigma_cf = mesh.MaterialCF({"conductor": sigma_value}, default=0.0)
+            A = V.TrialFunction()
+            v = V.TestFunction()
+            a = BilinearForm(V, symmetric=True, check_unused=False)
+            a += (1.0 / mu0) * (grad(A) * grad(v) + A * v / rho ** 2) * rho * dx
+            a += 1j * omega * sigma_cf * A * v * rho * dx
+            a.Assemble()
+            f = LinearForm(V)
+            f += J0 * coil_cf * v * rho * dx
+            f.Assemble()
+            gfu = GridFunction(V)
+            gfu.vec.data = a.mat.Inverse(V.FreeDofs(), inverse="umfpack") * f.vec
+            lam = (c.n_turns / S_coil) * 2 * np.pi * Integrate(coil_cf * rho * gfu, mesh)
+            return 1j * omega * lam / I_source
 
-        impedance = voltage / I_source
-        return impedance
-
-    def _compute_self_impedance(
-        self, coil: ECTCoilParams, I_source: float
-    ) -> complex:
-        """Compute self-impedance analytically (coil in free space).
-
-        Uses the Dodd-Deeds Z0 formula as the FEM self-impedance reference.
-        """
-        from ..inversion.dodd_deeds import DoddDeedsModel
-        model = DoddDeedsModel(coil)
-        return model.z0()
-
-    def evaluate_field_on_line(
-        self, gfu, mesh, rho_val: float,
-        z_min: float = None, z_max: float = None, n_points: int = 200,
-    ) -> tuple[np.ndarray, np.ndarray]:
-        """Sample E_phi along a vertical line for plotting/comparison."""
-        z_min = z_min or self.domain_z_bot
-        z_max = z_max or self.domain_z_top
-        z_vals = np.linspace(z_min, z_max, n_points)
-        e_vals = np.array([complex(gfu(mesh(rho_val, z))) for z in z_vals])
-        return z_vals, e_vals
+        z0 = solve_for_sigma(0.0)
+        out = np.empty(len(sigma_array), dtype=complex)
+        for i, sig in enumerate(sigma_array):
+            z_cond = solve_for_sigma(float(sig))
+            out[i] = (z0 - z_cond) / z0.imag
+        return out

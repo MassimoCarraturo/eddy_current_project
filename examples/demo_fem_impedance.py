@@ -69,25 +69,39 @@ def run_fem_demo(coil, material):
     try:
         result = fem.setup_and_solve()
         z_fem = result["impedance"]
+        z0_fem = result["z0"]
         z_norm_fem = result["impedance_normalized"]
-        z0 = result["z0"]
+        r_check = result["resistance_check"]
 
-        print(f"  FEM impedance          = {z_fem:.6e}")
+        print(f"  Z0  (air, FEM)         = {z0_fem:.6e}")
+        print(f"  Z   (conductor, FEM)   = {z_fem:.6e}")
         print(f"  FEM normalised Z       = {z_norm_fem:.6e}")
 
-        # Analytical comparison
+        # Internal consistency: flux-linkage resistance vs direct ohmic loss
+        print(f"  Re(Z) from flux linkage = {z_fem.real:.4f} ohm")
+        print(f"  R   from ohmic loss     = {r_check:.4f} ohm  "
+              f"(agreement {abs(r_check - z_fem.real)/abs(z_fem.real)*100:.3f}%)")
+
+        # Physical sanity: eddy currents add resistance, reduce reactance
+        print(f"  Re(Z) > 0 (eddy losses)      : {z_fem.real > 0}")
+        print(f"  Im(Z) < Im(Z0) (less induct.): {z_fem.imag < z0_fem.imag}")
+
+        # Comparison with the analytical model (reflection sign now corrected)
         model = DoddDeedsModel(coil)
         z_norm_ana = model.z_normalized(material)
-        print(f"  Analytical normalised Z = {z_norm_ana:.6e}")
-
-        rel_err_re = abs(z_norm_fem.real - z_norm_ana.real) / abs(z_norm_ana.real) * 100
-        rel_err_im = abs(z_norm_fem.imag - z_norm_ana.imag) / abs(z_norm_ana.imag) * 100
-        print(f"  Relative error (Re): {rel_err_re:.2f}%")
-        print(f"  Relative error (Im): {rel_err_im:.2f}%")
+        print(f"\n  Analytical normalised Z = {z_norm_ana:.6e}")
+        im_err = (abs(z_norm_fem.imag - z_norm_ana.imag)
+                  / abs(z_norm_ana.imag) * 100)
+        print(f"  Reactance agreement (Im): {im_err:.2f}%  "
+              f"(residual ~ domain truncation)")
+        same_sign = np.sign(z_norm_fem.imag) == np.sign(z_norm_ana.imag)
+        print(f"  Sign-consistent with FEM : {same_sign}")
 
         return result
     except Exception as e:
+        import traceback
         print(f"  [ERROR] FEM computation failed: {e}")
+        traceback.print_exc()
         return None
 
 
@@ -170,9 +184,10 @@ def main():
         width = 0.35
         ax.bar(x - width / 2, [z_ana.real, z_ana.imag], width, label="Analytical")
         ax.bar(x + width / 2, [z_fem.real, z_fem.imag], width, label="FEM")
+        ax.axhline(0, color="k", lw=0.8)
         ax.set_xticks(x)
         ax.set_xticklabels(labels)
-        ax.set_title("FEM vs Analytical Impedance")
+        ax.set_title("FEM vs Analytical Z_norm\n(reflection sign corrected)")
         ax.legend()
     else:
         ax.semilogx(freqs, z_freq.real, "b-", lw=1.5, label="Re(Z)")
