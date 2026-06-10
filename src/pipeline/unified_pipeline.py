@@ -1,14 +1,17 @@
 """
 Unified ECT pipeline: geometry reconstruction + strain prediction.
 
-Connects the two pillars of the thesis into a single workflow:
+Connects the pillars of the project into a single workflow:
 
   Raw ECT data  ──►  Segmentation  ──►  3D DICOM  ──►  FCM-ready geometry
        │
-       └──►  Impedance inversion  ──►  Δσ/σ₀  ──►  ε = Δσ/(σ₀·κ)
+       ├──►  Impedance inversion  ──►  Δσ/σ₀  ──►  ε = Δσ/(σ₀·κ)      (scalar)
+       │
+       └──►  Directional probes  ──►  MAP inversion + prior  ──►  ε_ij  (tensor)
 
-This pipeline takes layer-wise ECT impedance data and produces both
-the reconstructed geometry and the estimated strain field.
+The scalar branch reproduces the thesis workflow; the tensor branch fuses a set
+of directional measurements with a process-simulation prior to reconstruct the
+full strain tensor field (see src/tensor_model/).
 """
 
 import numpy as np
@@ -54,6 +57,49 @@ class StrainResult:
 
 
 @dataclass
+class TensorStrainResult:
+    """Output of the tensor strain-prediction stage.
+
+    strain_voigt has shape (n_layers, n_points, 6) in tensor-Voigt order
+    [xx, yy, zz, yz, xz, xy].  ``resolution`` is the per-component data-resolved
+    fraction (1 = determined by measurement, 0 = taken from the prior).
+    """
+    layer_indices: np.ndarray
+    strain_voigt: np.ndarray
+    directions: list
+    resolution: np.ndarray
+    condition_number: float
+    component_names: tuple = ("xx", "yy", "zz", "yz", "xz", "xy")
+
+    def mean_strain_voigt(self) -> np.ndarray:
+        """Per-layer strain Voigt vectors, averaged over x (n_layers, 6)."""
+        return self.strain_voigt.mean(axis=1)
+
+    def component_profile(self, name: str) -> np.ndarray:
+        """Per-layer profile of one component, averaged over x (n_layers,)."""
+        i = self.component_names.index(name)
+        return self.strain_voigt[..., i].mean(axis=1)
+
+    def strain_tensor(self, layer_pos: int, x_pos: int = 0) -> np.ndarray:
+        """Full 3x3 strain tensor at a (layer, x) location."""
+        from ..tensor_model.elastoresistivity import from_voigt
+        return from_voigt(self.strain_voigt[layer_pos, x_pos])
+
+    def volumetric_strain(self) -> np.ndarray:
+        """Volumetric strain tr(eps) field (n_layers, n_points)."""
+        return self.strain_voigt[..., :3].sum(axis=-1)
+
+    def equivalent_strain(self) -> np.ndarray:
+        """von-Mises-equivalent strain field (n_layers, n_points)."""
+        v = self.strain_voigt
+        exx, eyy, ezz = v[..., 0], v[..., 1], v[..., 2]
+        eyz, exz, exy = v[..., 3], v[..., 4], v[..., 5]
+        dev = ((exx - eyy) ** 2 + (eyy - ezz) ** 2 + (ezz - exx) ** 2
+               + 6.0 * (eyz ** 2 + exz ** 2 + exy ** 2))
+        return np.sqrt(dev / 2.0) * (2.0 / 3.0)
+
+
+@dataclass
 class PipelineResult:
     """Combined output of the unified pipeline."""
     reconstruction: ReconstructionResult
@@ -61,6 +107,7 @@ class PipelineResult:
     n_layers: int
     n_channels: int
     n_x_points: int
+    tensor_strain: Optional["TensorStrainResult"] = None
 
 
 class UnifiedECTPipeline:
@@ -90,6 +137,7 @@ class UnifiedECTPipeline:
         }
 
         self.layers: dict[int, dict] = {}
+        self.directional_layers: dict[int, np.ndarray] = {}
         self.n_channels = 0
 
     def add_layer(
@@ -224,11 +272,89 @@ class UnifiedECTPipeline:
             strain_maps=strain_maps,
         )
 
+    # -- Tensor strain (directional probes + simulation prior) --------------
+
+    def add_directional_layer(self, layer_index: int, measurements: np.ndarray):
+        """Add directional ECT measurements for one layer.
+
+        Args:
+            layer_index: Layer number (0-based).
+            measurements: Relative directional readings n_hat^T (delta_sigma/sigma0)
+                n_hat, shape (n_probes,) for a single per-layer estimate, or
+                (n_probes, n_x) for a spatially resolved one. Probe ordering must
+                match the ``directions`` passed to run_tensor_strain_prediction.
+        """
+        m = np.asarray(measurements, dtype=float)
+        if m.ndim == 1:
+            m = m[:, np.newaxis]  # (n_probes,) -> (n_probes, 1 point)
+        self.directional_layers[layer_index] = m
+
+    def run_tensor_strain_prediction(
+        self,
+        model,
+        directions,
+        prior_field: np.ndarray = None,
+        prior_weight: float = 1e-3,
+    ) -> TensorStrainResult:
+        """Stage 2b: reconstruct the full strain tensor from directional probes.
+
+        Fuses the directional measurements with an optional process-simulation
+        prior via the MAP estimator in tensor_model.TensorStrainInverter.
+
+        Args:
+            model: ElastoResistivityModel relating strain to conductivity.
+            directions: list of unit sensing directions (the probe set).
+            prior_field: optional prior strain, shape (n_layers, 6) or
+                (n_layers, n_points, 6); broadcast per layer when 2-D.
+            prior_weight: MAP regularisation lambda (small -> trust data).
+        """
+        from ..tensor_model import TensorStrainInverter
+        from ..tensor_model.probe_design import design_metrics
+
+        if not self.directional_layers:
+            raise ValueError(
+                "No directional layer data. Call add_directional_layer() first."
+            )
+        n_probes = len(directions)
+        idxs = sorted(self.directional_layers.keys())
+
+        inverter = TensorStrainInverter(
+            model, directions, sigma0=1.0, prior_weight=prior_weight
+        )
+
+        strain_layers = []
+        for li, idx in enumerate(idxs):
+            meas = self.directional_layers[idx]            # (n_probes, n_points)
+            if meas.shape[0] != n_probes:
+                raise ValueError(
+                    f"Layer {idx}: {meas.shape[0]} measurements but "
+                    f"{n_probes} directions were given."
+                )
+            Y = meas.T                                     # (n_points, n_probes)
+            prior = None
+            if prior_field is not None:
+                pf = np.asarray(prior_field, dtype=float)
+                prior = np.tile(pf[li], (Y.shape[0], 1)) if pf.ndim == 2 else pf[li]
+            strain_layers.append(inverter.invert_field(Y, prior))
+
+        strain_voigt = np.stack(strain_layers, axis=0)     # (n_layers, n_points, 6)
+        metrics = design_metrics(inverter.A)
+
+        return TensorStrainResult(
+            layer_indices=np.array(idxs),
+            strain_voigt=strain_voigt,
+            directions=list(directions),
+            resolution=inverter.data_resolved_fraction(),
+            condition_number=metrics["condition_number"],
+        )
+
+    # -- Orchestration -------------------------------------------------------
+
     def run(self, run_strain: bool = True) -> PipelineResult:
         """Execute the full pipeline.
 
         Args:
-            run_strain: If True, also run the strain prediction stage.
+            run_strain: If True, also run the scalar strain prediction stage.
                        Set to False for geometry-only reconstruction.
         """
         if not self.layers:

@@ -37,10 +37,12 @@ Integrates geometry reconstruction and strain prediction into a single `UnifiedE
 ```
 Raw ECT data  -->  Segmentation  -->  3D volume  -->  DICOM metadata
      |
-     +-------->  Impedance inversion  -->  conductivity  -->  strain
+     +--->  Impedance inversion  -->  conductivity  -->  scalar strain (kappa)
+     |
+     +--->  Directional probes  -->  MAP inversion + prior  -->  strain TENSOR field
 ```
 
-Processes layer-wise multi-channel impedance data and exports DICOM-compatible metadata for downstream Finite Cell Method (FCM) simulations.
+Processes layer-wise multi-channel impedance data and exports DICOM-compatible metadata for downstream Finite Cell Method (FCM) simulations. The tensor branch (`add_directional_layer` + `run_tensor_strain_prediction`) consumes directional-probe measurements and a process-simulation prior to reconstruct the full strain-tensor field, returning a `TensorStrainResult` with per-component resolution and derived volumetric / von-Mises-equivalent strain fields. See `examples/demo_pipeline_tensor.py`.
 
 ### Tensor Strain Model (`src/tensor_model/`)
 
@@ -89,6 +91,7 @@ python examples/demo_tensor_model.py       # Tensor elastoresistivity + rosette
 python examples/demo_observability.py      # Which strain components are resolvable
 python examples/demo_probe_design.py       # Optimal probe-set design
 python examples/demo_tensor_inversion.py   # Tensor inversion with simulation prior
+python examples/demo_pipeline_tensor.py    # Tensor strain field via UnifiedECTPipeline
 ```
 
 ## Tests
@@ -97,7 +100,7 @@ python examples/demo_tensor_inversion.py   # Tensor inversion with simulation pr
 pytest tests/ -v
 ```
 
-57 unit tests covering segmentation, forward-model structure, round-trip inversion, pipeline integration, FEM impedance (NGSolve), the tensor elastoresistivity model, observability, probe design, and tensor-strain inversion. FEM tests skip automatically when NGSolve is absent.
+63 unit tests covering segmentation, forward-model structure, round-trip inversion, pipeline integration (scalar and tensor), FEM impedance (NGSolve), the tensor elastoresistivity model, observability, probe design, and tensor-strain inversion. FEM tests skip automatically when NGSolve is absent.
 
 ## Dependencies
 

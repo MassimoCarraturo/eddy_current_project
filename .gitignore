@@ -13,3 +13,15 @@ env/
 # Generated outputs (not tracked in this repo)
 *.png
 docs/
+
+# LaTeX build artifacts
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+
+# ...but DO track the paper figures (override the global *.png ignore above)
+!paper/figures/
+!paper/figures/*.png
