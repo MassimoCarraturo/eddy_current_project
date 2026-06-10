@@ -54,11 +54,10 @@ class TestFEMCoilImpedance:
         assert rel < 1e-3, f"R mismatch {rel:.2e}"
 
     def test_normalized_reactance_matches_analytical(self, fem_result):
-        """|Im(Z_norm)| should match the analytical model within ~15%.
+        """Im(Z_norm) should match the analytical model within ~15%.
 
-        (Sign differs from the current analytical model, whose reflection
-        coefficient has the opposite convention; magnitude is the physical
-        check here.)
+        After the reflection-sign correction the two are sign-consistent; the
+        residual is domain-truncation error.
         """
         from src.inversion.dodd_deeds import DoddDeedsModel
         coil = ECTCoilParams(
@@ -67,8 +66,25 @@ class TestFEMCoilImpedance:
         )
         z_norm_fem = fem_result["impedance_normalized"]
         z_norm_ana = DoddDeedsModel(coil).z_normalized(MaterialParams(sigma=16.2e6))
-        rel = abs(abs(z_norm_fem.imag) - abs(z_norm_ana.imag)) / abs(z_norm_ana.imag)
+        rel = abs(z_norm_fem.imag - z_norm_ana.imag) / abs(z_norm_ana.imag)
         assert rel < 0.15, f"reactance mismatch {rel:.3f}"
+
+
+class TestSensitivityKernel:
+    def test_reciprocity_matches_finite_difference(self):
+        """The reciprocity kernel must predict dZ from a sigma perturbation.
+
+        delta_Z = -(1/I^2) integral delta_sigma E.E dV should match a direct
+        finite-difference re-solve as the perturbation shrinks.
+        """
+        from src.fem_impedance.sensitivity import validate_reciprocity
+        coil = ECTCoilParams(
+            r_inner=0.00404, r_outer=0.01184, length=0.00802,
+            n_turns=1858, liftoff=0.001, frequency=240e3,
+        )
+        material = MaterialParams(sigma=16.2e6)
+        res = validate_reciprocity(coil, material, dsigma_frac=0.005)
+        assert abs(res["ratio"] - 1.0) < 0.02, f"ratio {res['ratio']}"
 
 
 if __name__ == "__main__":

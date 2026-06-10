@@ -113,6 +113,69 @@ class FEMCoilImpedance:
 
     # -- Solve ---------------------------------------------------------------
 
+    def _space_and_source(self, mesh):
+        """Build the FE space and the (mesh-dependent) coil source data."""
+        from ngsolve import H1
+        c = self.coil
+        V = H1(mesh, order=self.order, complex=True, dirichlet="axis|outer")
+        S_coil = (c.r_outer - c.r_inner) * c.length
+        I_source = 1.0
+        J0 = c.n_turns * I_source / S_coil
+        coil_cf = mesh.MaterialCF({"coil": 1.0}, default=0.0)
+        return {"V": V, "coil_cf": coil_cf, "J0": J0,
+                "I_source": I_source, "S_coil": S_coil}
+
+    def _solve(self, mesh, src, sigma_value):
+        """Solve the eddy-current problem for one conductivity value.
+
+        Returns (gfu, Z, sigma_cf) where gfu is the vector potential A_phi.
+        """
+        from ngsolve import (
+            BilinearForm, LinearForm, GridFunction, Integrate, grad, dx, x as rho,
+        )
+        c = self.coil
+        omega = c.omega
+        V, coil_cf = src["V"], src["coil_cf"]
+        sigma_cf = mesh.MaterialCF({"conductor": sigma_value}, default=0.0)
+
+        A = V.TrialFunction()
+        v = V.TestFunction()
+        a = BilinearForm(V, symmetric=True, check_unused=False)
+        a += (1.0 / mu0) * (grad(A) * grad(v) + A * v / rho ** 2) * rho * dx
+        a += 1j * omega * sigma_cf * A * v * rho * dx
+        a.Assemble()
+
+        f = LinearForm(V)
+        f += src["J0"] * coil_cf * v * rho * dx
+        f.Assemble()
+
+        gfu = GridFunction(V)
+        gfu.vec.data = a.mat.Inverse(V.FreeDofs(), inverse="umfpack") * f.vec
+
+        # Flux linkage Lambda = (n/S) * 2pi * integral_coil rho * A
+        lam = (c.n_turns / src["S_coil"]) * 2 * np.pi * Integrate(coil_cf * rho * gfu, mesh)
+        impedance = 1j * omega * lam / src["I_source"]
+        return gfu, impedance, sigma_cf
+
+    def solve_fields(self, sigma_values) -> dict:
+        """Build the mesh/space once and solve for each conductivity given.
+
+        Returns a dict with the shared 'mesh', 'V', 'I_source' and a list
+        'results', each entry being {'sigma', 'gfu', 'Z', 'sigma_cf'}. The same
+        mesh is reused for every value, which is what makes finite-difference
+        sensitivity studies (sensitivity.py) free of mesh-to-mesh noise.
+        """
+        self._check_ngsolve()
+        mesh = self._build_mesh()
+        src = self._space_and_source(mesh)
+        results = []
+        for sig in sigma_values:
+            gfu, Z, sigma_cf = self._solve(mesh, src, float(sig))
+            results.append({"sigma": float(sig), "gfu": gfu, "Z": Z,
+                            "sigma_cf": sigma_cf})
+        return {"mesh": mesh, "V": src["V"], "I_source": src["I_source"],
+                "results": results}
+
     def setup_and_solve(self) -> dict:
         """Build the FEM model, solve, and return the solution and impedance.
 
@@ -123,49 +186,15 @@ class FEMCoilImpedance:
             'impedance_normalized'             : (Z0 - Z) / Im(Z0)
             'resistance_check'                 : R from direct ohmic-loss integral
         """
-        self._check_ngsolve()
+        from ngsolve import Integrate, Conj, x as rho
 
-        from ngsolve import (
-            H1, BilinearForm, LinearForm, GridFunction, Integrate,
-            grad, dx, Conj, x as rho,
-        )
-
-        c = self.coil
-        m = self.material
-        omega = c.omega
-
-        mesh = self._build_mesh()
-        V = H1(mesh, order=self.order, complex=True, dirichlet="axis|outer")
-
-        S_coil = (c.r_outer - c.r_inner) * c.length
-        I_source = 1.0
-        J0 = c.n_turns * I_source / S_coil
-        coil_cf = mesh.MaterialCF({"coil": 1.0}, default=0.0)
-
-        def solve_for_sigma(sigma_value):
-            sigma_cf = mesh.MaterialCF({"conductor": sigma_value}, default=0.0)
-            A = V.TrialFunction()
-            v = V.TestFunction()
-
-            a = BilinearForm(V, symmetric=True, check_unused=False)
-            a += (1.0 / mu0) * (grad(A) * grad(v) + A * v / rho ** 2) * rho * dx
-            a += 1j * omega * sigma_cf * A * v * rho * dx
-            a.Assemble()
-
-            f = LinearForm(V)
-            f += J0 * coil_cf * v * rho * dx
-            f.Assemble()
-
-            gfu = GridFunction(V)
-            gfu.vec.data = a.mat.Inverse(V.FreeDofs(), inverse="umfpack") * f.vec
-
-            # Flux linkage Lambda = (n/S) * 2pi * integral_coil rho * A
-            lam = (c.n_turns / S_coil) * 2 * np.pi * Integrate(coil_cf * rho * gfu, mesh)
-            impedance = 1j * omega * lam / I_source
-            return gfu, impedance, sigma_cf
-
-        gfu_air, z0, _ = solve_for_sigma(0.0)
-        gfu_cond, z_cond, sigma_cf = solve_for_sigma(m.sigma)
+        omega = self.coil.omega
+        out = self.solve_fields([0.0, self.material.sigma])
+        mesh = out["mesh"]
+        I_source = out["I_source"]
+        air, cond = out["results"][0], out["results"][1]
+        z0, z_cond = air["Z"], cond["Z"]
+        gfu_cond, sigma_cf = cond["gfu"], cond["sigma_cf"]
 
         # Independent cross-check: resistance from ohmic loss P = 1/2 integral sigma |E|^2 dV
         abs_e2 = omega ** 2 * (gfu_cond * Conj(gfu_cond)).real
@@ -176,9 +205,9 @@ class FEMCoilImpedance:
 
         return {
             "mesh": mesh,
-            "V": V,
+            "V": out["V"],
             "solution": gfu_cond,
-            "solution_air": gfu_air,
+            "solution_air": air["gfu"],
             "impedance": z_cond,
             "z0": z0,
             "impedance_normalized": z_norm,
@@ -190,44 +219,10 @@ class FEMCoilImpedance:
     def impedance_vs_sigma(self, sigma_array) -> np.ndarray:
         """Compute the normalised impedance for several conductivities.
 
-        Reuses one mesh and the free-space (sigma=0) reference solve, then
-        re-solves the conductor problem for each conductivity.
+        Reuses one mesh and the free-space (sigma=0) reference solve.
         """
-        self._check_ngsolve()
-        from ngsolve import (
-            H1, BilinearForm, LinearForm, GridFunction, Integrate,
-            grad, dx, x as rho,
-        )
-
-        c = self.coil
-        omega = c.omega
-        mesh = self._build_mesh()
-        V = H1(mesh, order=self.order, complex=True, dirichlet="axis|outer")
-
-        S_coil = (c.r_outer - c.r_inner) * c.length
-        I_source = 1.0
-        J0 = c.n_turns * I_source / S_coil
-        coil_cf = mesh.MaterialCF({"coil": 1.0}, default=0.0)
-
-        def solve_for_sigma(sigma_value):
-            sigma_cf = mesh.MaterialCF({"conductor": sigma_value}, default=0.0)
-            A = V.TrialFunction()
-            v = V.TestFunction()
-            a = BilinearForm(V, symmetric=True, check_unused=False)
-            a += (1.0 / mu0) * (grad(A) * grad(v) + A * v / rho ** 2) * rho * dx
-            a += 1j * omega * sigma_cf * A * v * rho * dx
-            a.Assemble()
-            f = LinearForm(V)
-            f += J0 * coil_cf * v * rho * dx
-            f.Assemble()
-            gfu = GridFunction(V)
-            gfu.vec.data = a.mat.Inverse(V.FreeDofs(), inverse="umfpack") * f.vec
-            lam = (c.n_turns / S_coil) * 2 * np.pi * Integrate(coil_cf * rho * gfu, mesh)
-            return 1j * omega * lam / I_source
-
-        z0 = solve_for_sigma(0.0)
-        out = np.empty(len(sigma_array), dtype=complex)
-        for i, sig in enumerate(sigma_array):
-            z_cond = solve_for_sigma(float(sig))
-            out[i] = (z0 - z_cond) / z0.imag
-        return out
+        sigs = [0.0] + [float(s) for s in sigma_array]
+        out = self.solve_fields(sigs)
+        z0 = out["results"][0]["Z"]
+        return np.array([(z0 - r["Z"]) / z0.imag for r in out["results"][1:]],
+                        dtype=complex)
