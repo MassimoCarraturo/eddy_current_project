@@ -15,6 +15,17 @@ from .observability import (
     direction,
     NORMAL_COIL_ROW,
 )
+from .probe_design import (
+    design_metrics,
+    evaluate_configuration,
+    max_achievable_rank,
+    optimize_inplane_rosette,
+    optimize_probe_set,
+)
+from .strain_inversion import (
+    TensorStrainInverter,
+    volumetric_strain,
+)
 
 __all__ = [
     "ElastoResistivityModel",
@@ -25,4 +36,11 @@ __all__ = [
     "projection_row",
     "direction",
     "NORMAL_COIL_ROW",
+    "design_metrics",
+    "evaluate_configuration",
+    "max_achievable_rank",
+    "optimize_inplane_rosette",
+    "optimize_probe_set",
+    "TensorStrainInverter",
+    "volumetric_strain",
 ]

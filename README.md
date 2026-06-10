@@ -42,6 +42,17 @@ Raw ECT data  -->  Segmentation  -->  3D volume  -->  DICOM metadata
 
 Processes layer-wise multi-channel impedance data and exports DICOM-compatible metadata for downstream Finite Cell Method (FCM) simulations.
 
+### Tensor Strain Model (`src/tensor_model/`)
+
+Generalises the scalar strain-conductivity law (`Δσ/σ₀ = κ·ε`) to the full tensorial relation `(Δσ/σ₀)_ij = K_ijkl·ε_kl`, and provides the tools to recover a 3-D strain tensor from scalar ECT measurements:
+
+- **`elastoresistivity`** &mdash; `ElastoResistivityModel`: two-constant isotropic (or general anisotropic) strain-to-conductivity coupling. The thesis scalar κ is one directional projection of this tensor.
+- **`observability`** &mdash; treats each directional probe as sensing `n̂ᵀσn̂` (a conductivity "rosette") and uses an SVD to report which strain components a probe configuration can resolve. Backed by the FEM reciprocity kernel in `fem_impedance/sensitivity.py`.
+- **`probe_design`** &mdash; optimises probe orientations/tilts to make the inversion full-rank and well-conditioned; reports the fundamental rank limit set by the material's elastoresistivity.
+- **`strain_inversion`** &mdash; `TensorStrainInverter`: regularised MAP inversion that fuses ECT measurements with a process-simulation prior (data assimilation). The resolution matrix shows, per component, how much comes from data vs prior.
+
+A single scalar impedance cannot determine a 6-component tensor, but a small set of directional/tilted probes (plus a simulation prior for the hard-to-observe components) can. See `examples/demo_observability.py`, `demo_probe_design.py`, and `demo_tensor_inversion.py`.
+
 ## Quick Start
 
 ```python
@@ -74,6 +85,10 @@ python examples/demo_segmentation.py       # Segmentation method comparison
 python examples/demo_inversion.py          # Forward model + round-trip inversion
 python examples/demo_fem_impedance.py      # Conductivity/frequency sweeps
 python examples/demo_unified_pipeline.py   # Full pipeline on synthetic LPBF build
+python examples/demo_tensor_model.py       # Tensor elastoresistivity + rosette
+python examples/demo_observability.py      # Which strain components are resolvable
+python examples/demo_probe_design.py       # Optimal probe-set design
+python examples/demo_tensor_inversion.py   # Tensor inversion with simulation prior
 ```
 
 ## Tests
@@ -82,13 +97,13 @@ python examples/demo_unified_pipeline.py   # Full pipeline on synthetic LPBF bui
 pytest tests/ -v
 ```
 
-16 unit tests covering segmentation accuracy, forward-model structure, round-trip inversion, and pipeline integration. All pass in under 1 second.
+57 unit tests covering segmentation, forward-model structure, round-trip inversion, pipeline integration, FEM impedance (NGSolve), the tensor elastoresistivity model, observability, probe design, and tensor-strain inversion. FEM tests skip automatically when NGSolve is absent.
 
 ## Dependencies
 
 - Python 3.10+
 - NumPy, SciPy, Matplotlib
-- [NGSolve](https://ngsolve.org/) (optional, for FEM impedance computation)
+- [NGSolve](https://ngsolve.org/) (optional, for FEM impedance and sensitivity kernels)
 
 ## References
 
