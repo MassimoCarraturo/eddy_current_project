@@ -298,9 +298,26 @@ conductivity along its sensing direction,
   y(\hat{\bm n}) = \hat{\bm n}^{\!\top}\sig\,\hat{\bm n},
   \label{eq:proj}
 \end{equation}
-the conductivity analogue of a mechanical strain-gauge rosette. Stacking $M$
-probes gives a linear map $\bm y = \mathsf{M}\,\bm\sigma_{\mathrm{v}}$ from the
-conductivity Voigt vector to the measurements; composing with $\Kt$ yields the
+the conductivity analogue of a mechanical strain-gauge rosette.
+
+Equation~\eqref{eq:proj} is a leading-order model: it assumes each probe drives
+current cleanly along $\hat{\bm n}$. Accessed from the build surface this is well
+justified in-plane but optimistic out-of-plane, because the induced eddy currents
+are confined within a skin depth and flow essentially parallel to the surface ---
+the axisymmetric solve of Section~\ref{sec:forward} makes this exact, with $\bm E$
+purely azimuthal so that a normal coil is rigorously blind to $\sigma_{zz}$. A
+coil merely tilted above the surface therefore gains only limited $\sigma_{zz}$
+sensitivity; genuine out-of-plane access calls for edge/side probing, elongated or
+rotating-field probes, or multi-frequency depth profiling. We accordingly treat
+the six-direction, full-rank result below as an \emph{upper bound} on what
+directional diversity can deliver, and take the in-plane rosette combined with the
+simulation prior (Section~\ref{sec:inv}) as the practical configuration;
+extracting the true out-of-plane row of $\mathsf M$ from a 3-D anisotropic
+eddy-current model is left to future work.
+
+Stacking $M$ probes gives a linear map
+$\bm y = \mathsf{M}\,\bm\sigma_{\mathrm{v}}$ from the conductivity Voigt vector to
+the measurements; composing with $\Kt$ yields the
 strain map $\bm y = \mathsf{A}\,\eps_{\mathrm v}$ with
 $\mathsf{A}=\sigma_0\,\mathsf{M}\,\Kt$. The singular value decomposition of
 $\mathsf A$ gives the number of resolvable strain combinations (rank), their
@@ -309,7 +326,9 @@ summarises the resolving power of representative configurations.
 
 \begin{table}[t]
 \centering
-\caption{Resolvable strain degrees of freedom and conditioning by probe set.}
+\caption{Resolvable strain degrees of freedom and conditioning by probe set. The
+tilted six-probe row presumes idealised out-of-plane access and is an upper bound
+(Section~\ref{sec:obs}).}
 \label{tab:obs}
 \begin{tabular}{lcc}
 \toprule
@@ -342,7 +361,8 @@ of $\mathsf A$ subject to a rank constraint. For three in-plane probes the
 optimiser improves on the naive $0/45/90$ ($\mathrm{cond}=2.57$) and the delta
 rosette $0/60/120$ ($2.18$), reaching $1.93$. A six-direction set that includes
 tilted probes attains full rank ($6$) at $\mathrm{cond}=2.50$
-(Fig.~\ref{fig:design}). The ceiling is set by $\operatorname{rank}\Kt$: directional
+(Fig.~\ref{fig:design}) --- an upper bound that presumes the idealised
+out-of-plane access discussed in Section~\ref{sec:obs}. The ceiling is set by $\operatorname{rank}\Kt$: directional
 diversity helps only insofar as the elastoresistive response is anisotropic.
 Excitation frequency provides a complementary, depth-selective degree of freedom
 through the skin depth $\delta=\sqrt{2/(\omega\mu\sigma)}$
@@ -505,9 +525,10 @@ is fully implemented and verified, and --- as a by-product of cross-validating
 two dissimilar forward models --- caught two implementation pitfalls in our
 realisation of the classical model (a reflection sign and a units error in the
 propagation parameter), after which the two models agree to $0.9\%$ in
-resistance. Future work targets experimental calibration of the
-elastoresistivity constants and deployment of the pipeline for in-situ
-monitoring.
+resistance. Future work targets a 3-D anisotropic eddy-current model to quantify
+the true out-of-plane sensitivity of tilted and elongated probes, experimental
+calibration of the elastoresistivity constants, and deployment of the pipeline
+for in-situ monitoring.
 
 \section*{Code and data availability}
 The open-source pipeline (forward models, observability, probe design and

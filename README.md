@@ -100,7 +100,7 @@ python examples/demo_pipeline_tensor.py    # Tensor strain field via UnifiedECTP
 pytest tests/ -v
 ```
 
-63 unit tests covering segmentation, forward-model structure, round-trip inversion, pipeline integration (scalar and tensor), FEM impedance (NGSolve), the tensor elastoresistivity model, observability, probe design, and tensor-strain inversion. FEM tests skip automatically when NGSolve is absent.
+66 unit tests covering segmentation, forward-model structure, round-trip inversion, pipeline integration (scalar and tensor), FEM impedance (NGSolve), the tensor elastoresistivity model, observability, probe design (incl. the κ⊥/κ∥ sensitivity limit), and tensor-strain inversion. FEM tests skip automatically when NGSolve is absent.
 
 ## Dependencies
 
