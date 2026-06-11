@@ -11,6 +11,8 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{caption}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning}
 \usepackage[hidelinks]{hyperref}
 
 \graphicspath{{figures/}}
@@ -110,7 +112,48 @@ FEM-based observability analysis (Section~\ref{sec:obs}) built on a forward mode
 that we verify and cross-validate (Section~\ref{sec:forward}); an optimal
 directional-probe (``rosette'') design
 (Section~\ref{sec:design}); and a prior-informed tensor inversion realised inside
-an integrated pipeline (Sections~\ref{sec:inv}--\ref{sec:pipeline}).
+an integrated pipeline (Sections~\ref{sec:inv}--\ref{sec:pipeline}). The proposed
+deployment is sketched in Fig.~\ref{fig:overview}.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\small,
+  box/.style={draw, rounded corners, align=center, minimum height=1.0cm,
+              text width=2.7cm, fill=blue!5},
+  >={Stealth[round]}]
+% ---- LPBF machine (left) ----
+\fill[gray!10] (-0.1,-0.3) rectangle (3.5,2.9);
+\fill[gray!45] (0.2,-0.05) rectangle (3.1,0.2);            % build plate
+\foreach \i in {0,1,2,3,4} {
+  \fill[orange!30] (0.5,0.2+\i*0.16) rectangle (2.8,0.36+\i*0.16);}
+\draw (0.5,0.2) rectangle (2.8,1.16);                       % part
+\node at (1.65,0.72) {\scriptsize part};
+\fill[blue!25] (0.5,1.55) rectangle (2.8,1.9);             % recoater
+\node at (1.65,1.73) {\scriptsize recoater};
+\draw[thick] (0.95,1.45) ellipse (0.17 and 0.06);
+\draw[thick,rotate around={55:(1.65,1.45)}] (1.65,1.45) ellipse (0.17 and 0.06);
+\draw[thick,rotate around={-55:(2.35,1.45)}] (2.35,1.45) ellipse (0.17 and 0.06);
+\draw[->] (2.95,1.73) -- (3.35,1.73) node[above,pos=0.5]{\scriptsize scan};
+\node[align=center] at (1.65,2.55) {\scriptsize directional-probe rosette\\[-2pt]
+  \scriptsize (multi-frequency)};
+% ---- workflow (right) ----
+\node[box] (ect) at (6.0,2.2) {Layer-wise\\ directional ECT\\
+  $y=\hat{\bm n}^{\!\top}\sig\,\hat{\bm n}$};
+\node[box] (inv) at (6.0,0.5) {MAP inversion\\ $+$ simulation prior};
+\node[box, fill=green!10] (eps) at (9.4,1.35) {strain-tensor\\ field
+  $\varepsilon_{ij}(\bm x)$};
+\draw[->] (3.6,1.4) .. controls (4.6,1.4) and (4.6,2.2) .. (ect.west);
+\draw[->] (ect) -- (inv);
+\draw[->] (inv.east) .. controls (8.0,0.5) and (8.0,1.0) .. (eps.south west);
+\draw[->] (ect.east) .. controls (8.0,2.2) and (8.0,1.7) .. (eps.north west);
+\end{tikzpicture}
+\caption{Proposed deployment. A recoater-mounted, multi-frequency
+directional-probe rosette scans each layer; the directional measurements are
+fused with a thermomechanical process-simulation prior by a regularised (MAP)
+inversion to reconstruct the strain-tensor field. This schematic doubles as the
+graphical abstract.}
+\label{fig:overview}
+\end{figure}
 
 \section{Forward model and validation}
 \label{sec:forward}
@@ -204,7 +247,11 @@ truncation versus the analytical half-space. The analytical integral
 \eqref{eq:dd} is converged for $k_{\max}\!\sim\!6000$, within a stable plateau
 before the oscillatory Bessel kernel degrades the quadrature. This benchmark uses
 a reference coil over a generic conductor; realistic 316L parameters and their
-resolution implications are treated in Section~\ref{sec:feasibility}.
+resolution implications are treated in Section~\ref{sec:feasibility}. We stress
+that the agreement reported here is model-to-model \emph{verification};
+quantitative \emph{validation} against published experimental benchmarks (e.g.\
+the coil-over-conductor impedance benchmark of \cite{burke1988}) and against the
+thesis's measured 316L calibration is the natural next step.
 
 \begin{figure}[t]
 \centering
@@ -556,6 +603,9 @@ Evaluation}. Springer, 2019.
 \bibitem{auld1999} B.\,A.\ Auld, J.\,C.\ Moulder. Review of advances in
 quantitative eddy current nondestructive evaluation. \emph{J.\ Nondestruct.\
 Eval.}\ 18:3--36, 1999.
+\bibitem{burke1988} S.\,K.\ Burke. A benchmark problem for computation of
+$\Delta Z$ in eddy-current nondestructive evaluation. \emph{J.\ Nondestruct.\
+Eval.}\ 7:35--41, 1988.
 \bibitem{theodoulidis2006} T.\,P.\ Theodoulidis, E.\,E.\ Kriezis. \emph{Eddy
 Current Canonical Problems (with Applications to Nondestructive Evaluation)}.
 Tech Science Press, 2006.
