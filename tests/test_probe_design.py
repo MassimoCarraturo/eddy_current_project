@@ -61,5 +61,33 @@ class TestOptimisation:
         assert m["condition_number"] < 5.0
 
 
+class TestElastoResistivityRatio:
+    """Observability vs the kappa_perp/kappa_parallel ratio (paper Sec. 5)."""
+
+    def _full_set(self):
+        return ([direction(a) for a in (0, 60, 120)]
+                + [direction(a, 45) for a in (0, 60, 120)])
+
+    def test_volumetric_limit_collapses_rank(self):
+        """kappa_perp == kappa_parallel -> K is rank 1 -> only volumetric DOF."""
+        model = ElastoResistivityModel(kappa_long=-0.374, kappa_trans=-0.374)
+        assert evaluate_configuration(self._full_set(), model)["rank"] == 1
+
+    def test_conditioning_degrades_toward_volumetric(self):
+        """Condition number grows as kappa_perp -> kappa_parallel."""
+        full = self._full_set()
+        c_lo = evaluate_configuration(
+            full, ElastoResistivityModel(-0.374, -0.05))["condition_number"]
+        c_hi = evaluate_configuration(
+            full, ElastoResistivityModel(-0.374, -0.34))["condition_number"]
+        assert c_hi > c_lo
+
+    def test_anchored_kappa_reproduces_thesis_scalar(self):
+        """kappa_par = -0.374, kappa_perp = -0.08 -> along-load projection -0.326."""
+        model = ElastoResistivityModel(kappa_long=-0.374, kappa_trans=-0.08)
+        keff = model.effective_scalar_kappa([1, 0, 0], [1, 0, 0], 0.30)
+        assert abs(keff - (-0.326)) < 1e-3
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

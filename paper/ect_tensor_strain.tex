@@ -47,12 +47,15 @@ fourth-order coupling tensor; (ii) a finite-element (FEM) reciprocity analysis
 that quantifies which conductivity components a given probe senses; (iii) an
 optimal-design procedure for directional-probe sets (a conductivity ``rosette'');
 and (iv) a regularised, prior-informed inversion that fuses the measurements with
-a thermomechanical process simulation (data assimilation). Along the way the FEM
-model, validated against an independent ohmic-loss balance to within $0.000\%$,
-revealed and corrected two errors in the classical Dodd--Deeds analytical model
---- a reflection-coefficient sign and a units error in the propagation parameter
---- after which the analytical and FEM impedances agree to within $1\%$ in
-resistance and $3\%$ in reactance. On synthetic LPBF builds, a single normal coil
+a thermomechanical process simulation (data assimilation). Along the way,
+cross-validating the analytical model against the FEM --- whose impedance we
+verify against an independent ohmic-loss balance to better than $10^{-5}$ ---
+exposed two implementation pitfalls in our realisation of the classical
+Dodd--Deeds model: a reflection-coefficient sign and a units error in the
+propagation parameter. Such forward-model bugs survive a self-consistent
+synthetic round trip (an inverse crime) but are caught by a dissimilar redundant
+model; after correction the analytical and FEM normalised impedances agree to
+$0.9\%$ in resistance and $2.8\%$ in reactance. On synthetic LPBF builds, a single normal coil
 resolves one strain degree of freedom, an in-plane rosette resolves three, and a
 six-direction tilted set resolves all six; the prior supplies the components that
 the probes cannot observe. The complete workflow is implemented in an open
@@ -83,11 +86,29 @@ reality. In three dimensions the strain $\eps$ is a symmetric second-order tenso
 with six independent components, while a coil reports a single scalar. Recovering
 six numbers from one is impossible without additional information.
 
+\paragraph{Related work.} That conductivity depends on elastic strain through the
+piezoresistive (elastoresistive) effect underpins an established line of
+eddy-current residual-stress assessment developed largely by the Nagy group:
+high-frequency apparent-conductivity spectroscopy and iterative inversion recover
+near-surface residual-stress depth profiles in shot-peened superalloys
+\cite{yu2004,abunabah2006,abunabah2007}. That work also established a key
+confounder --- cold work and dislocation-density changes alter conductivity
+alongside elastic strain --- which is especially pronounced in LPBF
+microstructures and which we revisit in Section~\ref{sec:feasibility}. In metal
+additive manufacturing, recoater-mounted ECT is already used for layer-wise
+density and defect monitoring \cite{spurek2022,monu2025}, with part-temperature
+compensation shown to be essential \cite{spurek2024}; residual stress is a
+central concern of the field \cite{bartlett2019,withers2001} but is not yet mapped
+in~situ.
+Our contribution is therefore not ``ECT senses strain'' but a \emph{tensorial}
+observability framework, optimal rosette design, and simulation-prior fusion that
+together target the strain \emph{tensor} in LPBF.
+
 This paper develops the methodology and tooling to close that gap. We make four
 contributions: a tensorial elastoresistivity model (Section~\ref{sec:tensor}); an
 FEM-based observability analysis (Section~\ref{sec:obs}) built on a forward model
-that we validate and use to correct a long-standing sign convention
-(Section~\ref{sec:forward}); an optimal directional-probe (``rosette'') design
+that we verify and cross-validate (Section~\ref{sec:forward}); an optimal
+directional-probe (``rosette'') design
 (Section~\ref{sec:design}); and a prior-informed tensor inversion realised inside
 an integrated pipeline (Sections~\ref{sec:inv}--\ref{sec:pipeline}).
 
@@ -97,7 +118,7 @@ an integrated pipeline (Sections~\ref{sec:inv}--\ref{sec:pipeline}).
 \subsection{Analytical Dodd--Deeds model}
 For a cylindrical multi-turn coil of inner/outer radius $r_i,r_o$, length $\ell$,
 $n$ turns and lift-off $s$ above a conductive half-space, the impedance follows
-the Dodd--Deeds formulation \cite{dodd1968,bowler2019}
+the Dodd--Deeds formulation \cite{dodd1968,bowler2019,theodoulidis2006}
 \begin{equation}
   Z = \frac{\mathrm{j}\omega\mu_0\pi n^2}{\ell^2 (r_o-r_i)^2}
   \int_0^\infty \frac{J^2(\alpha r_i,\alpha r_o)}{\alpha^5}
@@ -107,7 +128,9 @@ the Dodd--Deeds formulation \cite{dodd1968,bowler2019}
 \end{equation}
 where $P(\alpha)=e^{-2\alpha(\ell+s)}+e^{-2\alpha s}-2e^{-\alpha(\ell+2s)}$,
 $\gamma=\sqrt{\alpha^2+\mathrm{j}\omega\mu\sigma}$ and $\Gamma$ is the half-space
-reflection coefficient. The normalised impedance is
+reflection coefficient; $J(\alpha r_i,\alpha r_o)=\int_{\alpha r_i}^{\alpha r_o}
+x\,J_1(x)\,\mathrm{d}x$ is the coil's Bessel kernel and $\mu=\mu_0$ for the
+non-magnetic 316L considered here. The normalised impedance is
 $Z_{\mathrm{norm}}=(Z_0-Z)/\operatorname{Im}(Z_0)$ with $Z_0$ the free-space
 (self) impedance.
 
@@ -117,12 +140,12 @@ The physically correct reflection coefficient for a non-magnetic half-space is
   \label{eq:refl}
 \end{equation}
 which tends to $-1$ as $\sigma\to\infty$: eddy currents then reduce the net
-inductance and add resistance, as required physically. An implementation that
-used the opposite sign, $(\gamma-\alpha)/(\alpha+\gamma)$, predicts the unphysical
+inductance and add resistance, as required physically. A realisation that uses
+the opposite sign, $(\gamma-\alpha)/(\alpha+\gamma)$, predicts the unphysical
 opposite (increasing reactance, negative resistance over a passive conductor).
-The error is invisible to a self-consistent synthetic round trip but corrupts the
-inversion of real data; we detected and corrected it by cross-validation against
-the independent FEM model below.
+This pitfall is invisible to a self-consistent synthetic round trip --- an
+\emph{inverse crime} --- but corrupts the inversion of real data; we caught it
+only by cross-validating against the dissimilar FEM model below.
 
 \subsection{Axisymmetric finite-element model}
 To handle geometries where the half-space assumption fails (finite parts, layers,
@@ -147,8 +170,9 @@ normalisation.
 
 \begin{table}[t]
 \centering
-\caption{FEM forward-model results and internal consistency checks (Bowler
-reference coil, $\sigma=16.2$~MS/m, $240$~kHz).}
+\caption{FEM forward-model results and internal-consistency (verification)
+checks (reference coil over a generic conductor, $\sigma=16.2$~MS/m, $240$~kHz;
+realistic 316L values are used in Section~\ref{sec:feasibility}).}
 \label{tab:fem}
 \begin{tabular}{lll}
 \toprule
@@ -157,26 +181,30 @@ Quantity & Value & Check\\
 $Z_0$ (coil in air)        & $0 + 5.18\times10^4\,\mathrm{j}\;\Omega$ & purely inductive\\
 $Z$ (over conductor)       & $622 + 3.73\times10^4\,\mathrm{j}\;\Omega$ & $\mathrm{Re}>0$, $\mathrm{Im}<\mathrm{Im}\,Z_0$\\
 $\mathrm{Re}(Z)$ flux linkage & $622.35\,\Omega$ & --\\
-$R$ from ohmic loss        & $622.35\,\Omega$ & agree to $0.000\%$\\
+$R$ from ohmic loss        & $622.35\,\Omega$ & agree to $<10^{-5}$\\
 mesh convergence           & order 3 $\approx$ order 4 & 5 significant figures\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The model is mesh-converged and internally exact: the resistance extracted from
-the flux-linkage impedance equals a direct volume integral of the ohmic loss
-$\tfrac12\!\int\sigma|E|^2\,\mathrm{d}V$ to within $0.000\%$ (Table~\ref{tab:fem}).
-Cross-validation against this FEM also exposed a units error in the propagation
-parameter $\gamma$ (a missing factor of $\mu_0$, so that $\omega\mu\sigma$ no
-longer had units of $\mathrm{m}^{-2}$): it made the conductor appear nearly
-perfect ($\Gamma\!\to\!-1$), yielding an essentially correct reactance but
-suppressing the predicted loss by nearly three orders of magnitude. With both the
-reflection sign \eqref{eq:refl} and the units corrected, the analytical and FEM
-\emph{normalised} impedances agree to $0.9\%$ in resistance and $2.8\%$ in
+The FEM is mesh-converged and internally consistent: the resistance extracted
+from the flux-linkage impedance \eqref{eq:flux} equals a direct volume integral
+of the ohmic loss $\tfrac12\!\int\sigma|E|^2\,\mathrm{d}V$ to better than
+$10^{-5}$ (Table~\ref{tab:fem}) --- a \emph{verification} check, distinct from
+experimental validation. Cross-validating the analytical model against this FEM
+exposed a second implementation pitfall in our realisation: a units error in the
+propagation parameter $\gamma$ (a missing factor of $\mu_0$, so that
+$\omega\mu\sigma$ no longer had units of $\mathrm{m}^{-2}$), which made the
+conductor appear nearly perfect ($\Gamma\!\to\!-1$) --- an essentially correct
+reactance but a loss suppressed by nearly three orders of magnitude. With both
+the reflection sign \eqref{eq:refl} and the units corrected, the analytical and
+FEM \emph{normalised} impedances agree to $0.9\%$ in resistance and $2.8\%$ in
 reactance (Fig.~\ref{fig:fem}); the small reactance residual is the finite FEM
 truncation versus the analytical half-space. The analytical integral
 \eqref{eq:dd} is converged for $k_{\max}\!\sim\!6000$, within a stable plateau
-before the oscillatory Bessel kernel degrades the quadrature.
+before the oscillatory Bessel kernel degrades the quadrature. This benchmark uses
+a reference coil over a generic conductor; realistic 316L parameters and their
+resolution implications are treated in Section~\ref{sec:feasibility}.
 
 \begin{figure}[t]
 \centering
@@ -218,13 +246,29 @@ orientations. A purely volumetric response ($\kappa_\parallel=\kappa_\perp$)
 reduces $\Kt$ to rank one, so conductivity then constrains only the volumetric
 strain $\operatorname{tr}\eps$.
 
+\paragraph{Constants and provenance.} The elastoresistivity constants are not yet
+independently calibrated; we anchor them to the available data. A single uniaxial
+test fixes only one projection, so we choose $\kappa_\parallel$ such that the
+along-load uniaxial projection reproduces the thesis scalar
+($\kappa_\parallel-2\nu\kappa_\perp=-0.326$ at $\nu=0.30$), giving
+$\kappa_\parallel=-0.374$ for an illustrative $\kappa_\perp=-0.08$. The result
+figures use the round value $\kappa_\parallel=-0.40$ (along-load projection
+$-0.352$, within $8\%$ of $-0.326$). Separating $\kappa_\parallel$ from
+$\kappa_\perp$ requires multi-orientation loading (Section~\ref{sec:feasibility}).
+Crucially, the observability results depend on these constants only through the
+ratio $\kappa_\perp/\kappa_\parallel$, shown to be robust across its plausible
+range in Section~\ref{sec:design}.
+
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.92\textwidth]{tensor_model_demo.png}
 \caption{Tensorial elastoresistivity. Left: the ``conductivity rosette'' --- the
 effective $\kappa$ sensed in a uniaxial test depends on the sensing angle,
 swinging from $-0.35$ (along load) to $+0.06$ (transverse). Right: the induced
-$(\dsig/\sigma_0)_{ij}$ tensor for a general strain.}
+$(\dsig/\sigma_0)_{ij}$ tensor for the strain $\varepsilon_{xx}=1.0\%$,
+$\varepsilon_{yy}=-0.3\%$, $\varepsilon_{zz}=0.4\%$, $\varepsilon_{xy}=0.2\%$,
+$\varepsilon_{yz}=0.1\%$ (illustrative $\kappa_\parallel=-0.40$,
+$\kappa_\perp=-0.08$).}
 \label{fig:tensor}
 \end{figure}
 
@@ -232,8 +276,8 @@ $(\dsig/\sigma_0)_{ij}$ tensor for a general strain.}
 \label{sec:obs}
 
 \subsection{Reciprocity sensitivity kernel}
-By driving-point reciprocity, a small conductivity perturbation changes the coil
-impedance by
+By driving-point reciprocity \cite{auld1999}, a small conductivity perturbation
+changes the coil impedance by
 \begin{equation}
   \delta Z = -\frac{1}{I^2}\int \delta\sigma\, \bm E\!\cdot\!\bm E \,\mathrm{d}V.
   \label{eq:recip}
@@ -313,13 +357,34 @@ the frequency tuning of sensing depth from the FEM model (bottom-right).}
 \label{fig:design}
 \end{figure}
 
+The ceiling $\operatorname{rank}\Kt$ is itself set by the material.
+Figure~\ref{fig:kappa} sweeps the elastoresistivity ratio
+$\kappa_\perp/\kappa_\parallel$: the resolvable DOF stay full for any anisotropic
+response, but the conditioning of the strain map degrades smoothly toward the
+volumetric limit $\kappa_\perp\!\to\!\kappa_\parallel$, where the rank finally
+collapses to one. At the thesis-anchored ratio ($\approx0.21$) both the in-plane
+rosette and the full set are comfortably conditioned, so the design is
+insensitive to the under-determined split between $\kappa_\parallel$ and
+$\kappa_\perp$.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{kappa_sensitivity.png}
+\caption{Strain observability vs the elastoresistivity ratio
+$\kappa_\perp/\kappa_\parallel$. Left: condition number of the strain map for an
+in-plane rosette and a full set, diverging as the response becomes volumetric.
+Right: resolvable DOF, full for any anisotropic response. The dashed line marks
+the thesis-anchored ratio ($\approx0.21$).}
+\label{fig:kappa}
+\end{figure}
+
 \section{Tensor-strain inversion with a simulation prior}
 \label{sec:inv}
 Because realistic probe sets are often rank-deficient (e.g.\ surface access
 precludes observing $\sigma_{zz}$), we estimate the strain by maximum a
-posteriori (MAP) inversion that fuses measurements with a process-simulation
-prior $\eps_{\mathrm{prior}}$ (data assimilation). With Gaussian measurement
-noise ($\sigma_d$) and prior ($\sigma_p$),
+posteriori (MAP) inversion \cite{aster2018} that fuses measurements with a
+process-simulation prior $\eps_{\mathrm{prior}}$ (data assimilation). With
+Gaussian measurement noise ($\sigma_d$) and prior ($\sigma_p$),
 \begin{equation}
   \eps^\star = \eps_{\mathrm{prior}}
   + \big(\mathsf A^{\!\top}\mathsf A + \lambda \mathsf I\big)^{-1}
@@ -337,7 +402,10 @@ $3.9\times10^{-4}$: it corrects the in-plane components from data and falls back
 to the prior for $\varepsilon_{zz}$ and the out-of-plane shears, exactly as the
 resolution diagonal predicts (Fig.~\ref{fig:inv}). Where only a normal-coil
 scalar is available, the estimate degrades gracefully to the volumetric strain
-via the invariant coupling $\kappa_v=(\kappa_\parallel+2\kappa_\perp)/3$.
+via the invariant coupling $\kappa_v=(\kappa_\parallel+2\kappa_\perp)/3$. The
+scalar $\lambda$ here assumes an i.i.d.\ prior and equal probe noise; a full prior
+covariance estimated from an ensemble of process simulations, together with an
+instrument-referenced impedance-domain noise model, are natural refinements.
 
 \begin{figure}[t]
 \centering
@@ -358,7 +426,10 @@ reconstructed geometry (for finite-cell simulation) and, from directional
 measurements, a full strain-\emph{tensor} field. Figure~\ref{fig:pipeline} shows
 a reconstructed $60\times40\times6$ field for a synthetic build, with the derived
 volumetric and von-Mises-equivalent strain fields and the per-component
-resolution. The implementation is verified by 63 automated tests.
+resolution. Each voxel is currently inverted independently; the finite spatial
+footprint of the sensitivity kernel (Fig.~\ref{fig:obs}) couples neighbouring
+voxels and should, in a quantitative treatment, be folded into $\mathsf A$ rather
+than ignored. The implementation is verified by 66 automated tests.
 
 \begin{figure}[t]
 \centering
@@ -369,6 +440,41 @@ versus build height (bottom-left) and the per-component data resolution
 (bottom-right).}
 \label{fig:pipeline}
 \end{figure}
+
+\section{Feasibility: signal, confounders and resolution}
+\label{sec:feasibility}
+The framework above is geometry- and material-agnostic; deploying it on LPBF 316L
+meets three physical realities that set the measurement requirements.
+
+\paragraph{Signal magnitude.} Residual elastic strains in LPBF 316L are of order
+$1$--$2\times10^{-3}$, so with $|\kappa|\approx0.33$ the relative conductivity
+signal is only $\dsig/\sigma_0\approx3$--$7\times10^{-4}$.
+
+\paragraph{Temperature --- the dominant confounder.} 316L has resistivity
+$\rho\approx0.74~\mu\Omega\,$m ($\sigma\approx1.35$~MS/m) with a temperature
+coefficient of order $10^{-3}\,$K$^{-1}$ (several $\times10^{-4}\,$K$^{-1}$ near
+room temperature) \cite{nist316l}. A drift of only ${\sim}1$~K therefore changes
+$\sigma$ by as much as the entire strain signal --- consistent with in-situ ECT
+studies that found part temperature dominant and required explicit compensation
+\cite{spurek2024}. Strain sensing thus demands differential or reference-channel
+probes, multi-frequency lift-off/temperature separation, and tight thermal
+referencing. Cold work and dislocation density (Section~1) are a further,
+microstructure-borne confounder that co-varies with the thermal history.
+
+\paragraph{Penetration and depth resolution.} At the realistic 316L conductivity
+the skin depth is $\delta=\sqrt{2/(\omega\mu\sigma)}\approx0.9$~mm at $240$~kHz
+(falling to ${\approx}0.4$~mm at $1$~MHz), far larger than a $30$--$50~\mu$m
+layer: each measurement averages roughly $20$--$30$ deposited layers. The
+$60\times40\times6$ reconstruction of Section~\ref{sec:pipeline} is therefore a
+coarse-$z$ illustration; layer-resolved tomography would require multi-frequency
+depth inversion, and the forward-model benchmark of Table~\ref{tab:fem} (a higher,
+generic conductivity, $\delta\approx0.25$~mm) should be read as a verification
+case rather than a 316L prediction.
+
+These constraints do not undermine the framework --- they specify the instrument:
+a thermally-referenced, multi-frequency directional-probe rosette, whose
+observability and conditioning are exactly what
+Sections~\ref{sec:obs}--\ref{sec:design} quantify.
 
 \section{Discussion}
 The cross-validation between the analytical and FEM forward models proved
@@ -395,27 +501,76 @@ impedance constrains a \emph{projection} of the conductivity tensor; resolving
 the strain tensor then requires measurement diversity (a directional/tilted probe
 ``rosette'', optionally multi-frequency) and, for the components that remain
 unobservable, a physics-based prior fused by regularised inversion. The framework
-is fully implemented, validated, and --- as a by-product of cross-validating two
-dissimilar forward models --- corrects two errors (a reflection sign and a units
-error in the propagation parameter) in the classical analytical model, after
-which the two models agree to within $1\%$ in resistance. Future work targets
-experimental calibration of the elastoresistivity constants and deployment of the
-pipeline for in-situ monitoring.
+is fully implemented and verified, and --- as a by-product of cross-validating
+two dissimilar forward models --- caught two implementation pitfalls in our
+realisation of the classical model (a reflection sign and a units error in the
+propagation parameter), after which the two models agree to $0.9\%$ in
+resistance. Future work targets experimental calibration of the
+elastoresistivity constants and deployment of the pipeline for in-situ
+monitoring.
 
-\begin{thebibliography}{9}
-\bibitem{dodd1968} C.\,V.\ Dodd and W.\,E.\ Deeds, ``Analytical solutions to
-eddy-current probe-coil problems,'' \emph{J.\ Appl.\ Phys.}, 39(6), 2829--2838,
-1968.
-\bibitem{bowler2019} J.\,R.\ Bowler, \emph{Eddy-Current Nondestructive
+\section*{Code and data availability}
+The open-source pipeline (forward models, observability, probe design and
+inversion) and the scripts that regenerate every figure are available at
+\url{https://github.com/MassimoCarraturo/eddy_current_project}; an archived
+release with a DOI will be deposited on Zenodo.
+
+\section*{CRediT author statement}
+\textbf{M.\ Carraturo:} conceptualisation, methodology, software, writing ---
+original draft. \textbf{B.\,I.\ Ates:} calibration data, methodology, writing ---
+review and editing.
+
+\section*{Declaration of generative AI}
+Generative-AI tools assisted software development and manuscript editing; all
+scientific content was verified by the authors, who take full responsibility for
+it. AI tools are not listed as authors.
+
+% NOTE (draft): volume/issue/page details for several entries should be
+% completed before submission; entries below are author/title/venue/year-verified.
+\begin{thebibliography}{99}
+\bibitem{dodd1968} C.\,V.\ Dodd, W.\,E.\ Deeds. Analytical solutions to
+eddy-current probe-coil problems. \emph{J.\ Appl.\ Phys.}\ 39(6):2829--2838, 1968.
+\bibitem{bowler2019} J.\,R.\ Bowler. \emph{Eddy-Current Nondestructive
 Evaluation}. Springer, 2019.
-\bibitem{ates2025} B.\,I.\ Ates, \emph{Towards Eddy Current-Based Strain
-Prediction in Laser Powder Bed Fusion of Metals}. MSc thesis, Technical University
-of Munich, 2025.
-\bibitem{garcia2011} J.\ Garc\'ia-Mart\'in, J.\ G\'omez-Gil and E.\
-V\'azquez-S\'anchez, ``Non-destructive techniques based on eddy current
-testing,'' \emph{Sensors}, 11(3), 2525--2565, 2011.
-\bibitem{aster2018} R.\,C.\ Aster, B.\ Borchers and C.\,H.\ Thurber,
-\emph{Parameter Estimation and Inverse Problems}, 3rd ed. Elsevier, 2018.
+\bibitem{auld1999} B.\,A.\ Auld, J.\,C.\ Moulder. Review of advances in
+quantitative eddy current nondestructive evaluation. \emph{J.\ Nondestruct.\
+Eval.}\ 18:3--36, 1999.
+\bibitem{theodoulidis2006} T.\,P.\ Theodoulidis, E.\,E.\ Kriezis. \emph{Eddy
+Current Canonical Problems (with Applications to Nondestructive Evaluation)}.
+Tech Science Press, 2006.
+\bibitem{garcia2011} J.\ Garc\'ia-Mart\'in, J.\ G\'omez-Gil,
+E.\ V\'azquez-S\'anchez. Non-destructive techniques based on eddy current
+testing. \emph{Sensors}\ 11(3):2525--2565, 2011.
+\bibitem{yu2004} F.\ Yu, P.\,B.\ Nagy. Eddy current assessment of near-surface
+residual stress in shot-peened nickel-base superalloys. \emph{J.\ Nondestruct.\
+Eval.}\ 23(1), 2004.
+\bibitem{abunabah2006} B.\,A.\ Abu-Nabah, P.\,B.\ Nagy. Iterative inversion
+method for eddy current profiling of near-surface residual stress in
+surface-treated metals. \emph{NDT\&E Int.}, 2006.
+\bibitem{abunabah2007} B.\,A.\ Abu-Nabah, P.\,B.\ Nagy. High-frequency eddy
+current conductivity spectroscopy for residual stress profiling in
+surface-treated nickel-base superalloys. \emph{NDT\&E Int.}, 2007.
+\bibitem{spurek2022} M.\,A.\ Spurek et al. In-situ monitoring of powder bed
+fusion of metals using eddy current testing. \emph{Additive Manufacturing}, 2022.
+\bibitem{spurek2024} M.\,A.\ Spurek et al. Influence of part temperature on
+in-situ monitoring of powder bed fusion of metals using eddy current testing.
+\emph{Progress in Additive Manufacturing}, 2024.
+\bibitem{monu2025} M.\,C.\,C.\ Monu, J.\,C.\ Chekotu, D.\ Brabazon. Eddy current
+testing and monitoring in metal additive manufacturing: a review. \emph{J.\
+Manuf.\ Process.}, 2025.
+\bibitem{bartlett2019} J.\,L.\ Bartlett, X.\ Li. An overview of residual stresses
+in metal powder bed fusion. \emph{Additive Manufacturing}\ 27:131--149, 2019.
+\bibitem{withers2001} P.\,J.\ Withers, H.\,K.\,D.\,H.\ Bhadeshia. Residual stress.
+Part 1 --- measurement techniques. \emph{Mater.\ Sci.\ Technol.}\
+17(4):355--365, 2001.
+\bibitem{nist316l} Measurements of thermophysical properties of solid and liquid
+NIST SRM~316L stainless steel. National Institute of Standards and Technology,
+2021.
+\bibitem{ates2025} B.\,I.\ Ates. \emph{Towards Eddy Current-Based Strain
+Prediction in Laser Powder Bed Fusion of Metals}. MSc thesis, Technical
+University of Munich, 2025.
+\bibitem{aster2018} R.\,C.\ Aster, B.\ Borchers, C.\,H.\ Thurber. \emph{Parameter
+Estimation and Inverse Problems}, 3rd ed. Elsevier, 2018.
 \end{thebibliography}
 
 \end{document}
