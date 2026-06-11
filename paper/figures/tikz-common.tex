@@ -1,0 +1,57 @@
+% ======================================================================
+% tikz-common.tex - shared setup for all standalone figures.
+% \input this from the preamble of every figures/fig_*.tex.
+% ======================================================================
+
+\usepackage{amsmath,bm}
+\usepackage{siunitx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, calc, positioning, patterns, shapes.geometric,
+                decorations.pathmorphing, decorations.pathreplacing}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots, colormaps}
+
+% ---- Okabe-Ito colorblind-safe palette --------------------------------
+\definecolor{oiBlue}{RGB}{0,114,178}
+\definecolor{oiOrange}{RGB}{230,159,0}
+\definecolor{oiGreen}{RGB}{0,158,115}
+\definecolor{oiVermillion}{RGB}{213,94,0}
+\definecolor{oiSky}{RGB}{86,180,233}
+\definecolor{oiPurple}{RGB}{204,121,167}
+\definecolor{oiYellow}{RGB}{240,228,66}
+
+\pgfplotscreateplotcyclelist{oi}{%
+  {oiBlue,       mark=*,         mark size=1.6pt},
+  {oiOrange,     mark=square*,   mark size=1.5pt},
+  {oiGreen,      mark=triangle*, mark size=1.9pt},
+  {oiVermillion, mark=diamond*,  mark size=1.8pt},
+  {oiSky,        mark=pentagon*, mark size=1.7pt},
+}
+
+% Axis sized for a single column: 76 mm + labels ~ 86 mm total width.
+\pgfplotsset{
+  every axis/.append style={
+    width=76mm, height=57mm,
+    line width=0.5pt,
+    tick style={line width=0.4pt, black},
+    grid=major,
+    grid style={gray!25, very thin},
+    cycle list name=oi,
+    legend cell align=left,
+    legend style={draw=gray!50, fill=white, font=\footnotesize, inner xsep=3pt},
+    label style={font=\small},
+    tick label style={font=\footnotesize},
+  },
+}
+
+% ---- Flowchart / schematic styles --------------------------------------
+\tikzset{
+  block/.style={draw, rounded corners=2pt, align=center,
+                minimum height=2.4em, inner xsep=7pt, inner ysep=4pt},
+  decision/.style={draw, diamond, aspect=2.2, align=center, inner sep=1.5pt},
+  io/.style={draw, trapezium, trapezium left angle=70,
+             trapezium right angle=110, align=center, inner xsep=6pt},
+  flow/.style={-{Latex[length=2.2mm]}},
+  dim/.style={{Latex[length=1.8mm]}-{Latex[length=1.8mm]}},
+}

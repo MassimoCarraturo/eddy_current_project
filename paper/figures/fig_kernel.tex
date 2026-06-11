@@ -1,0 +1,19 @@
+% FEM sensitivity density |E_phi|^2 in the specimen (near-surface decay).
+\documentclass[border=2pt]{standalone}
+\input{tikz-common.tex}
+\begin{document}
+\begin{tikzpicture}
+\begin{axis}[
+    width=92mm, height=52mm,
+    xlabel={$\rho$ (\si{\milli\metre})},
+    ylabel={depth $z$ (\si{\milli\metre})},
+    enlargelimits=false, axis on top, grid=none,
+    view={0}{90},
+    colormap/viridis,
+    colorbar,
+    colorbar style={ylabel={$|E_\phi|^2$ (norm.)}, ylabel style={font=\footnotesize}},
+  ]
+  \addplot3[surf, shader=interp] table[x=x, y=y, z=z] {../data/kernel.dat};
+\end{axis}
+\end{tikzpicture}
+\end{document}

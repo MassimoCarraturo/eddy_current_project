@@ -1,0 +1,19 @@
+% Reconstructed volumetric strain field over the build (signed: diverging map).
+\documentclass[border=2pt]{standalone}
+\input{tikz-common.tex}
+\begin{document}
+\begin{tikzpicture}
+\begin{axis}[
+    width=70mm, height=52mm,
+    xlabel={$x$ (norm.)},
+    ylabel={build height (norm.)},
+    enlargelimits=false, axis on top, grid=none,
+    view={0}{90},
+    colormap={bwr}{color=(oiBlue) color=(white) color=(oiVermillion)},
+    colorbar,
+    colorbar style={ylabel={$\mathrm{tr}\,\bm\varepsilon$ (\%)}, ylabel style={font=\footnotesize}},
+  ]
+  \addplot3[surf, shader=interp] table[x=x, y=y, z=z] {../data/field_vol.dat};
+\end{axis}
+\end{tikzpicture}
+\end{document}

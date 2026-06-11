@@ -1,0 +1,33 @@
+% Tensor-strain reconstruction along build height: in-plane vs out-of-plane.
+\documentclass[border=2pt]{standalone}
+\input{tikz-common.tex}
+\begin{document}
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style={group size=2 by 1, horizontal sep=18mm},
+    width=66mm, height=52mm,
+    xlabel={build height (norm.)},
+    ylabel={strain (\%)},
+  ]
+  \nextgroupplot[title={$\varepsilon_{xx}$ (in-plane)}, legend pos=north west,
+                 legend style={font=\scriptsize}]
+    \addplot[black, line width=0.9pt]       table[x=z,y=true_xx, col sep=comma]{../data/inv_profiles.csv};
+    \addlegendentry{true}
+    \addplot[gray, densely dashed]          table[x=z,y=prior_xx,col sep=comma]{../data/inv_profiles.csv};
+    \addlegendentry{prior}
+    \addplot[only marks, oiBlue, mark=*, mark size=1.1pt]
+                                            table[x=z,y=full_xx, col sep=comma]{../data/inv_profiles.csv};
+    \addlegendentry{full}
+    \addplot[only marks, oiVermillion, mark=x, mark size=1.6pt]
+                                            table[x=z,y=ros_xx,  col sep=comma]{../data/inv_profiles.csv};
+    \addlegendentry{rosette}
+  \nextgroupplot[title={$\varepsilon_{zz}$ (out-of-plane)}]
+    \addplot[black, line width=0.9pt]       table[x=z,y=true_zz, col sep=comma]{../data/inv_profiles.csv};
+    \addplot[gray, densely dashed]          table[x=z,y=prior_zz,col sep=comma]{../data/inv_profiles.csv};
+    \addplot[only marks, oiBlue, mark=*, mark size=1.1pt]
+                                            table[x=z,y=full_zz, col sep=comma]{../data/inv_profiles.csv};
+    \addplot[only marks, oiVermillion, mark=x, mark size=1.6pt]
+                                            table[x=z,y=ros_zz,  col sep=comma]{../data/inv_profiles.csv};
+\end{groupplot}
+\end{tikzpicture}
+\end{document}

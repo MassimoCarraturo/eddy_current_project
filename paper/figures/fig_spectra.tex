@@ -1,0 +1,21 @@
+% Strain-map singular-value spectra for three probe configurations.
+\documentclass[border=2pt]{standalone}
+\input{tikz-common.tex}
+\begin{document}
+\begin{tikzpicture}
+\begin{semilogyaxis}[
+    xlabel={singular value index},
+    ylabel={singular value of $\mathsf{A}$},
+    xtick={1,2,3,4,5,6},
+    ymin=1e-3, ymax=2,
+    legend pos=south west,
+  ]
+  \addplot+[oiBlue]      table[x=index, y=normal,  col sep=comma] {../data/spectra.csv};
+  \addlegendentry{normal coil (rank 1)}
+  \addplot+[oiOrange]    table[x=index, y=rosette, col sep=comma] {../data/spectra.csv};
+  \addlegendentry{in-plane rosette (rank 3)}
+  \addplot+[oiGreen]     table[x=index, y=full,    col sep=comma] {../data/spectra.csv};
+  \addlegendentry{rosette $+$ tilted (rank 6)}
+\end{semilogyaxis}
+\end{tikzpicture}
+\end{document}
