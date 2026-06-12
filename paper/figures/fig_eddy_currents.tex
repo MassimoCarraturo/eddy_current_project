@@ -1,0 +1,43 @@
+% Pedagogical schematic: eddy-current induction by an AC coil (meridional view).
+\documentclass[border=2pt]{standalone}
+\input{tikz-common.tex}
+\begin{document}
+\begin{tikzpicture}[font=\small, x=1cm, y=1cm]
+  % conductor
+  \fill[gray!15] (0,-1.8) rectangle (8,0);
+  \draw (0,-1.8) rectangle (8,0);
+  \node[anchor=south west] at (0.1,-1.75) {conductor, conductivity $\sigma$};
+  % skin-depth band
+  \draw[densely dotted, gray] (0,-0.85) -- (8,-0.85);
+  \draw[dim] (8.25,-0.85) -- (8.25,0)
+    node[midway, right=1pt, font=\footnotesize] {$\delta$};
+  % symmetry axis
+  \draw[dash dot, thin] (4,-1.9) -- (4,2.7);
+  % coil winding cross-sections: left current into page, right out of page
+  \fill[oiOrange!30] (2.4,0.6) rectangle (3.3,1.7);
+  \fill[oiOrange!30] (4.7,0.6) rectangle (5.6,1.7);
+  \draw[oiOrange!60!black, thick] (2.4,0.6) rectangle (3.3,1.7);
+  \draw[oiOrange!60!black, thick] (4.7,0.6) rectangle (5.6,1.7);
+  \node at (2.85,1.15) {$\otimes$};
+  \node at (5.15,1.15) {$\odot$};
+  \node[anchor=south] at (4,2.62) {drive current $I\,e^{\mathrm{j}\omega t}$};
+  % primary field loops
+  \draw[oiBlue, densely dashed] (4,1.15) ellipse (2.7 and 1.4);
+  \draw[oiBlue, densely dashed] (4,1.15) ellipse (1.5 and 0.8);
+  \node[oiBlue, anchor=west, font=\footnotesize] at (6.85,2.05)
+    {primary field $\bm B(t)$};
+  % induced eddy currents near the surface, fading with depth
+  \node[oiVermillion] at (2.45,-0.28) {$\odot$};
+  \node[oiVermillion] at (3.05,-0.28) {$\odot$};
+  \node[oiVermillion, opacity=0.5, scale=0.8] at (2.75,-0.62) {$\odot$};
+  \node[oiVermillion] at (4.95,-0.28) {$\otimes$};
+  \node[oiVermillion] at (5.55,-0.28) {$\otimes$};
+  \node[oiVermillion, opacity=0.5, scale=0.8] at (5.25,-0.62) {$\otimes$};
+  \node[oiVermillion, anchor=west, font=\footnotesize] at (0.3,-1.15)
+    {eddy currents $\bm J_{\mathrm e}$};
+  % Lenz note
+  \node[anchor=north, align=center, font=\footnotesize] at (4,-2.05)
+    {Lenz's law: $\bm J_{\mathrm e}$ opposes the change of flux
+     $\;\Rightarrow\;$ inductance drops, resistance rises};
+\end{tikzpicture}
+\end{document}

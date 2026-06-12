@@ -1,0 +1,30 @@
+% Skin effect: exponential decay of current density with depth, three
+% frequencies for 316L (sigma = 1.35 MS/m). delta = sqrt(2/(omega mu0 sigma)).
+\documentclass[border=2pt]{standalone}
+\input{tikz-common.tex}
+\begin{document}
+\begin{tikzpicture}
+\begin{axis}[
+    width=80mm, height=60mm,
+    xlabel={current density $|J|/J_0 = e^{z/\delta}$},
+    ylabel={depth $z$ (\si{\milli\metre})},
+    xmin=0, xmax=1.02, ymin=-3, ymax=0,
+    legend pos=south east,
+    legend style={font=\scriptsize},
+  ]
+  \addplot[oiBlue, thick, domain=-3:0, samples=120]
+    ({exp(x/1.77)}, {x});
+  \addlegendentry{\SI{60}{\kilo\hertz}, $\delta=\SI{1.77}{\milli\metre}$}
+  \addplot[oiOrange, thick, densely dashed, domain=-3:0, samples=120]
+    ({exp(x/0.886)}, {x});
+  \addlegendentry{\SI{240}{\kilo\hertz}, $\delta=\SI{0.89}{\milli\metre}$}
+  \addplot[oiGreen, thick, densely dotted, domain=-3:0, samples=120]
+    ({exp(x/0.433)}, {x});
+  \addlegendentry{\SI{1}{\mega\hertz}, $\delta=\SI{0.43}{\milli\metre}$}
+  % e^{-1} guide
+  \draw[gray, densely dotted] (axis cs:0.368,-3) -- (axis cs:0.368,0);
+  \node[gray, anchor=south, font=\footnotesize] at (axis cs:0.368,-0.45)
+    {$e^{-1}$};
+\end{axis}
+\end{tikzpicture}
+\end{document}

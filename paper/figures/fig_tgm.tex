@@ -1,0 +1,51 @@
+% Pedagogical schematic: temperature-gradient mechanism for residual stress.
+\documentclass[border=2pt]{standalone}
+\input{tikz-common.tex}
+\begin{document}
+\begin{tikzpicture}[font=\small, x=1cm, y=1cm]
+  % ================= panel (a): laser on =================
+  \begin{scope}
+    \fill[gray!15] (0,0) rectangle (3.6,1.4);
+    \draw (0,0) rectangle (3.6,1.4);
+    \node[gray, font=\footnotesize] at (1.8,0.55) {cool substrate};
+    \fill[oiVermillion!45] (0,1.4) rectangle (3.6,1.85);
+    \draw (0,1.4) rectangle (3.6,1.85);
+    % laser
+    \draw[flow, oiVermillion!85!black, very thick] (1.8,2.95) -- (1.8,2.0)
+      node[midway, right, font=\footnotesize] {laser};
+    % hindered expansion (dashed, outward)
+    \draw[gray, densely dashed, -{Latex[length=1.8mm]}]
+      (3.65,1.62) -- (4.25,1.62);
+    \draw[gray, densely dashed, -{Latex[length=1.8mm]}]
+      (-0.05,1.62) -- (-0.65,1.62);
+    \node[gray, font=\scriptsize, anchor=south] at (1.8,1.9)
+      {hot layer: expansion hindered};
+    % plastic compression (solid, inward)
+    \draw[flow, oiBlue, thick] (0.45,1.62) -- (1.15,1.62);
+    \draw[flow, oiBlue, thick] (3.15,1.62) -- (2.45,1.62);
+    \node[oiBlue, font=\scriptsize] at (1.8,1.18)
+      {plastic compression};
+    \node[font=\footnotesize, align=center] at (1.8,-0.5)
+      {(a) laser on: the constrained hot layer\\ yields in compression};
+  \end{scope}
+  % ================= panel (b): cooled =================
+  \begin{scope}[xshift=6.4cm]
+    \fill[gray!15] (0,0) rectangle (3.6,1.4);
+    \draw (0,0) rectangle (3.6,1.4);
+    \fill[gray!32] (0,1.4) rectangle (3.6,1.85);
+    \draw (0,1.4) rectangle (3.6,1.85);
+    % residual tension in the layer (outward arrows at the ends)
+    \draw[flow, oiVermillion, thick] (0.0,1.62) -- (-0.65,1.62);
+    \draw[flow, oiVermillion, thick] (3.6,1.62) -- (4.25,1.62);
+    \node[oiVermillion, font=\scriptsize, anchor=south] at (1.8,1.9)
+      {residual tension};
+    % compensating compression in the substrate
+    \draw[flow, oiBlue, thick] (-0.55,0.6) -- (0.1,0.6);
+    \draw[flow, oiBlue, thick] (4.15,0.6) -- (3.5,0.6);
+    \node[oiBlue, font=\scriptsize] at (1.8,0.6)
+      {compensating compression};
+    \node[font=\footnotesize, align=center] at (1.8,-0.5)
+      {(b) cooled: hindered contraction is\\ locked in as tensile strain};
+  \end{scope}
+\end{tikzpicture}
+\end{document}
