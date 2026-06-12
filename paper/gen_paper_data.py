@@ -211,6 +211,17 @@ save_csv("resolution.csv", ["index", "full", "rosette"],
          [(i + 1, inv_full.data_resolved_fraction()[i],
            inv_ros.data_resolved_fraction()[i]) for i in range(6)])
 
+
+def rmse(a, b):
+    return float(np.sqrt(np.mean((np.asarray(a) - np.asarray(b)) ** 2)))
+
+
+# case: 0 = prior only, 1 = full probe set, 2 = in-plane rosette
+save_csv("rmse.csv", ["case", "rmse"],
+         [(0, rmse(prior, ev)), (1, rmse(rec_full, ev)), (2, rmse(rec_ros, ev))])
+print("  RMSE  prior=%.3e  full=%.3e  rosette=%.3e"
+      % (rmse(prior, ev), rmse(rec_full, ev), rmse(rec_ros, ev)))
+
 # ---------------------------------------------------------------------------
 # 10. Pipeline reconstructed strain field (von Mises + volumetric)
 # ---------------------------------------------------------------------------
