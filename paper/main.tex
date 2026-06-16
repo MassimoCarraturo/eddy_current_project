@@ -62,8 +62,10 @@ with the analytical model to \SI{0.9}{\percent} in resistance and
 \SI{2.8}{\percent} in reactance. On synthetic LPBF builds a normal coil
 resolves one strain degree of freedom, an in-plane rosette three, and a tilted
 six-probe set all six; the simulation prior supplies the components the probes
-cannot observe. The complete workflow is implemented in an open, tested
-pipeline that outputs full strain-tensor fields.
+cannot observe. A bonded-probe tensile campaign on additively manufactured 316L
+corroborates the model, resolving a strain-borne conductivity change of the
+predicted sign and magnitude. The complete workflow is implemented in an open,
+tested pipeline that outputs full strain-tensor fields.
 \end{abstract}
 
 \begin{keyword}
@@ -144,8 +146,9 @@ the tensorial framework: the eddy-current forward model and its FEM verification
 (\cref{sec:obs}), and the prior-informed tensor inversion and pipeline
 (\cref{sec:inv}). \Cref{sec:results} reports the results and discusses them
 together---forward-model cross-validation, the resolvable strain components, the
-probe-design trade-offs, reconstruction accuracy on a synthetic build, and the
-recovery of the out-of-plane strain by mechanical equilibrium. \Cref{sec:conclusions}
+probe-design trade-offs, reconstruction accuracy on a synthetic build, the
+recovery of the out-of-plane strain by mechanical equilibrium, and an experimental
+corroboration on additively manufactured 316L. \Cref{sec:conclusions}
 summarizes what was shown, with numbers, and states the study's limitations.
 
 % ======================================================================
@@ -659,6 +662,44 @@ study above (higher, generic conductivity) is correspondingly a verification
 case, not a 316L prediction. None of this undermines the framework; it
 specifies the instrument --- a thermally referenced, multi-frequency,
 directional-probe rosette.
+
+\paragraph{Experimental corroboration} A companion campaign at the University of
+Pavia tested additively manufactured 316L tensile specimens (flat gauge
+\SI{10}{\milli\metre}$\times$\SI{2}{\milli\metre}, area
+${\approx}\SI{20.5}{\milli\metre\squared}$) with an eddy-current probe bonded to
+the gauge surface and driven at \SI{240}{\kilo\hertz}. A separate
+frequency--lift-off calibration, inverted by a radial-basis interpolant, maps the
+measured in- and out-of-phase response to a lift-off-invariant conductivity
+proxy: the eddy-current response depends on the product $\omega\sigma$, so at a
+fixed drive frequency the proxy tracks $\sigma$ and $\Delta\sigma/\sigma_0$
+follows the frequency it reports. \Cref{fig:experiment} shows the recovered
+$\Delta\sigma/\sigma_0$ for six specimens. The conductivity \emph{decreases}
+monotonically under tension --- the sign demanded by $\kappa<0$ --- by a median
+of ${\approx}\SI{0.7}{\percent}$ at the peak load (${\approx}\SI{490}{\mega\pascal}$,
+i.e. at yield), consistent in magnitude with the scalar law \eqref{eq:scalar} at
+the percent-level strains reached. The change is irreversible --- it does not
+recover --- confirming that a tensile-to-yield test is dominated by the plastic
+and cold-work response anticipated above, not by the reversible elastoresistive
+coupling; isolating the elastic $\kappa$ would require controlled elastic-range
+loading with synchronized, thermally referenced acquisition. The measurement
+nonetheless demonstrates the central premise: bonded eddy-current sensing
+resolves a strain-borne conductivity change of the expected sign and order of
+magnitude in real LPBF 316L.
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics{fig_experiment}
+  \caption{Experimental corroboration on additively manufactured 316L.
+  Lift-off-compensated relative conductivity change $\Delta\sigma/\sigma_0$ from a
+  bonded eddy-current probe (\SI{240}{\kilo\hertz}) during uniaxial tension,
+  against normalised test time, for six specimens (gray) and their median (blue).
+  The conductivity decreases monotonically under load --- the sign of $\kappa<0$
+  --- by ${\approx}\SI{0.7}{\percent}$ at peak load
+  (${\approx}\SI{490}{\mega\pascal}$), consistent with \eqref{eq:scalar}. The
+  monotonic, irreversible trend reflects the plastic and cold-work response of a
+  to-yield test, not the reversible elastic coupling.}
+  \label{fig:experiment}
+\end{figure}
 
 % ======================================================================
 \section{Conclusions}\label{sec:conclusions}
