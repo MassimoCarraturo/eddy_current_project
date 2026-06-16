@@ -20,7 +20,8 @@ from src.inversion.dodd_deeds import DoddDeedsModel
 from src.tensor_model import (ElastoResistivityModel, ObservabilityAnalysis,
                               direction, evaluate_configuration,
                               optimize_inplane_rosette, optimize_probe_set,
-                              TensorStrainInverter, to_voigt)
+                              TensorStrainInverter, to_voigt,
+                              EquilibriumConstrainedInverter)
 
 COMP = ["xx", "yy", "zz", "yz", "xz", "xy"]
 
@@ -221,6 +222,42 @@ save_csv("rmse.csv", ["case", "rmse"],
          [(0, rmse(prior, ev)), (1, rmse(rec_full, ev)), (2, rmse(rec_ros, ev))])
 print("  RMSE  prior=%.3e  full=%.3e  rosette=%.3e"
       % (rmse(prior, ev), rmse(rec_full, ev), rmse(rec_ros, ev)))
+
+# ---- equilibrium-constrained out-of-plane recovery (build-height column) --
+# Laterally homogeneous residual field -> interior equilibrium forces plane
+# stress at every depth, so eps_zz = -nu/(1-nu) (eps_xx+eps_yy) through the
+# column. An in-plane rosette measures (xx,yy,xy); equilibrium then fixes zz.
+NU = 0.30
+zc = np.linspace(0.0, 1.0, 40)
+exx = -0.003 + 0.004 * zc
+eyy = -0.002 + 0.003 * zc
+exy = 0.0015 * np.sin(np.pi * zc)
+ezz = -NU / (1.0 - NU) * (exx + eyy)
+eps_true_eq = np.zeros((40, 6))
+eps_true_eq[:, 0], eps_true_eq[:, 1], eps_true_eq[:, 2] = exx, eyy, ezz
+eps_true_eq[:, 5] = exy
+prior_eq = 0.85 * eps_true_eq + np.array([0.001, 0.001, 0.0015, 0.0, 0.0, 0.0])
+ros_eq = [direction(a) for a in (0, 60, 120)]
+inv_eq = EquilibriumConstrainedInverter(model, ros_eq, poisson=NU,
+                                        prior_weight=1e-4, constraint_weight=1e6)
+inv_do = EquilibriumConstrainedInverter(model, ros_eq, poisson=NU,
+                                        prior_weight=1e-4, constraint_weight=0.0)
+rng2 = np.random.default_rng(7)
+Yeq = np.array([inv_eq.forward(eps_true_eq[i], noise_std=1e-4, rng=rng2)
+                for i in range(40)])
+rec_eq = inv_eq.invert_field(Yeq, prior_eq)
+rec_do = inv_do.invert_field(Yeq, prior_eq)
+save_csv("eq_profile.csv", ["z", "true_zz", "prior_zz", "dataonly_zz", "eq_zz"],
+         list(zip(zc, eps_true_eq[:, 2] * 100, prior_eq[:, 2] * 100,
+                  rec_do[:, 2] * 100, rec_eq[:, 2] * 100)))
+save_csv("eq_resolution.csv", ["index", "data_only", "with_eq"],
+         [(i + 1, inv_do.resolved_fraction()[i], inv_eq.resolved_fraction()[i])
+          for i in range(6)])
+print("  eq: zz resolved  data-only=%.2f  with-equilibrium=%.2f  (RMSE zz "
+      "data-only=%.2e  eq=%.2e)"
+      % (inv_do.resolved_fraction()[2], inv_eq.resolved_fraction()[2],
+         rmse(rec_do[:, 2], eps_true_eq[:, 2]),
+         rmse(rec_eq[:, 2], eps_true_eq[:, 2])))
 
 # ---------------------------------------------------------------------------
 # 10. Pipeline reconstructed strain field (von Mises + volumetric)

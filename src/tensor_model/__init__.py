@@ -26,6 +26,11 @@ from .strain_inversion import (
     TensorStrainInverter,
     volumetric_strain,
 )
+from .equilibrium import (
+    EquilibriumConstrainedInverter,
+    free_surface_operator,
+    close_out_of_plane,
+)
 
 __all__ = [
     "ElastoResistivityModel",
@@ -43,4 +48,7 @@ __all__ = [
     "optimize_probe_set",
     "TensorStrainInverter",
     "volumetric_strain",
+    "EquilibriumConstrainedInverter",
+    "free_surface_operator",
+    "close_out_of_plane",
 ]

@@ -1,0 +1,47 @@
+% Equilibrium-constrained recovery of the out-of-plane strain eps_zz from an
+% in-plane rosette: profile recovery (left) and resolution gain (right).
+\documentclass[border=2pt]{standalone}
+\input{tikz-common.tex}
+\begin{document}
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style={group size=2 by 1, horizontal sep=15mm},
+    width=60mm, height=50mm,
+  ]
+  % ---- panel 1: eps_zz profile ----
+  \nextgroupplot[
+      xlabel={build height (norm.)},
+      ylabel={$\varepsilon_{zz}$ (\si{\percent})},
+      legend pos=north west, legend style={font=\scriptsize},
+    ]
+    \addplot[black, line width=0.9pt]
+      table[x=z, y=true_zz, col sep=comma] {../data/eq_profile.csv};
+    \addlegendentry{true}
+    \addplot[gray, densely dashed]
+      table[x=z, y=prior_zz, col sep=comma] {../data/eq_profile.csv};
+    \addlegendentry{prior}
+    \addplot[only marks, oiVermillion, mark=x, mark size=1.6pt]
+      table[x=z, y=dataonly_zz, col sep=comma] {../data/eq_profile.csv};
+    \addlegendentry{rosette only}
+    \addplot[only marks, oiBlue, mark=*, mark size=1.1pt]
+      table[x=z, y=eq_zz, col sep=comma] {../data/eq_profile.csv};
+    \addlegendentry{rosette $+$ equil.}
+  % ---- panel 2: resolution gain ----
+  \nextgroupplot[
+      ybar, bar width=4pt,
+      ylabel={data-resolved fraction},
+      ymin=0, ymax=1.1,
+      xtick={1,2,3,4,5,6},
+      xticklabels={$xx$,$yy$,$zz$,$yz$,$xz$,$xy$},
+      legend pos=south east, legend style={font=\scriptsize},
+      enlarge x limits=0.12,
+    ]
+    \addplot[fill=oiVermillion, draw=oiVermillion!60!black]
+      table[x=index, y=data_only, col sep=comma] {../data/eq_resolution.csv};
+    \addlegendentry{rosette only}
+    \addplot[fill=oiBlue, draw=oiBlue!60!black]
+      table[x=index, y=with_eq, col sep=comma] {../data/eq_resolution.csv};
+    \addlegendentry{$+$ equilibrium}
+\end{groupplot}
+\end{tikzpicture}
+\end{document}

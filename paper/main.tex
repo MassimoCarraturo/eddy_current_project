@@ -550,6 +550,44 @@ step for a quantitative treatment.
   \label{fig:fieldvol}
 \end{figure}
 
+\paragraph{Lifting the out-of-plane blindness by equilibrium} The skin effect
+denies the surface probes any direct grip on the out-of-plane components, yet
+mechanics supplies them. On a traction-free surface with normal $z$, equilibrium
+forces a plane-stress state ($\sigma_{zz}=\sigma_{xz}=\sigma_{yz}=0$), and
+isotropic Hooke's law fixes the out-of-plane strain exactly from the in-plane
+components,
+\begin{equation}
+  \varepsilon_{zz}=-\frac{\nu}{1-\nu}\,(\varepsilon_{xx}+\varepsilon_{yy}),
+  \qquad \varepsilon_{xz}=\varepsilon_{yz}=0 ,
+  \label{eq:closure}
+\end{equation}
+with Poisson ratio $\nu$. For a build whose residual field varies mainly through
+the height (laterally homogeneous), interior equilibrium propagates this
+plane-stress state to every depth, so \cref{eq:closure} holds through the column;
+lateral gradients make $\sigma_{zz}$ nonzero and require the full elastic
+boundary-value problem, the natural role of the process simulation.
+\Cref{eq:closure} is three linear constraints on $\eps_{\mathrm v}$; stacking them
+with the measurement map renders the rank-deficient inverse problem full-rank, so
+an in-plane rosette resolves all six components --- three from data, three from
+equilibrium. On the synthetic build of \cref{fig:equilibrium} the
+$\varepsilon_{zz}$ resolution rises from $0.05$ (data only) to $1.00$, and its
+reconstruction error falls from $1.0\times10^{-3}$ --- locked on a biased prior
+--- to $1.1\times10^{-4}$, the measurement-noise floor. The constraint applies to
+the \emph{elastic} strain, which in practice must be separated from cold-work and
+thermal contributions to the conductivity.
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics{fig_equilibrium}
+  \caption{Recovering the out-of-plane strain by equilibrium. Left:
+  $\varepsilon_{zz}$ along the build height --- the in-plane rosette alone
+  follows the biased prior, but adding the free-surface constraint
+  \eqref{eq:closure} recovers the true profile. Right: the data-resolved fraction
+  per component; equilibrium lifts the unobserved $zz,yz,xz$ from near zero to
+  one.}
+  \label{fig:equilibrium}
+\end{figure}
+
 \paragraph{Feasibility on LPBF 316L} Three physical realities set the
 instrument requirements. \emph{Signal:} residual elastic strains of
 $1$--$2\times10^{-3}$ produce a relative conductivity change of only
@@ -590,10 +628,13 @@ maximum-a-posteriori inversion reduces the strain RMSE on a synthetic build
 from $9.4\times10^{-4}$ (prior only) to $2.6\times10^{-4}$ with the full set
 and $3.9\times10^{-4}$ with the practical in-plane rosette.
 
-Two limitations bound the present study. Out-of-plane observability is
-intrinsically weak from the build surface --- $\sigma_{zz}$ leans on the prior
-or on multi-frequency profiling, and the six-probe result is an upper bound
-presuming idealised access. And the elastoresistivity constants are calibrated
+Two limitations bound the present study. Out-of-plane observability is weak from
+the build surface; mechanical equilibrium closes much of the gap --- the
+free-surface condition \eqref{eq:closure} recovers $\varepsilon_{zz}$ from the
+in-plane rosette, and the bulk field with lateral gradients follows from the full
+elastic solve --- but this transfers the burden to a clean separation of elastic
+strain from cold-work and thermal effects. And the elastoresistivity constants
+are calibrated
 only up to one uniaxial projection; multi-orientation tests are needed to
 separate $\kappa_\parallel$ from $\kappa_\perp$ and to characterise the
 as-built anisotropy of $\sigma_0$ in columnar LPBF microstructures. Future
