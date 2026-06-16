@@ -453,10 +453,10 @@ reports depends on the sensing direction --- swinging from $-0.35$ along the
 load to $+0.06$ transverse to it (\cref{fig:rosette}). Stacking directional
 probes and analysing the strain map $\mathsf A$ quantifies the resolving
 power: a normal coil resolves one strain degree of freedom and an in-plane
-rosette three (\cref{fig:spectra}, \cref{tab:obs}); from the build surface the
-out-of-plane components remain unobservable. Optimising the in-plane angles
-improves the conditioning from $2.57$ ($0/45/90$) and $2.18$ ($0/60/120$) to
-$1.93$.
+rosette three (\cref{tab:obs}); from the build surface the out-of-plane
+components remain unobservable. Optimising the in-plane angles improves the
+conditioning from $2.57$ ($0/45/90$) and $2.18$ ($0/60/120$) to $1.93$ at the
+angles $\theta=\{22^\circ,90^\circ,158^\circ\}$ (\cref{fig:rosette_design}).
 
 \begin{figure}[tb]
   \centering
@@ -490,12 +490,15 @@ $1.93$.
 
 \begin{figure}[tb]
   \centering
-  \includegraphics{fig_spectra}
-  \caption{Singular-value spectra of the strain map $\mathsf A$ for two
-  probe configurations. The number of non-negligible singular values is the
-  number of resolvable strain degrees of freedom: one (normal coil) and three
-  (in-plane rosette).}
-  \label{fig:spectra}
+  \includegraphics{fig_rosette_design}
+  \caption{Optimised in-plane rosette: three co-located directional eddy-current
+  probes sensing the effective conductivity
+  $y_i=\hat{\bm n}_i^{\!\top}\sig\,\hat{\bm n}_i$ along in-plane axes
+  $\hat{\bm n}_i(\theta_i)$ at angles measured from the load axis $x$. The
+  optimised angles $\theta=\{22^\circ,90^\circ,158^\circ\}$ minimise the
+  condition number of the strain map (to $1.93$) and resolve the three in-plane
+  strain components $\varepsilon_{xx}$, $\varepsilon_{yy}$, $\varepsilon_{xy}$.}
+  \label{fig:rosette_design}
 \end{figure}
 
 \begin{table}[tb]
@@ -517,30 +520,19 @@ $1.93$.
 
 \paragraph{Material limit on observability} The ceiling
 $\operatorname{rank}\Kt$ is set by the material itself. Sweeping the
-elastoresistivity ratio $\kappa_\perp/\kappa_\parallel$ (\cref{fig:kappa})
-shows that the resolvable degrees of freedom stay full for any anisotropic
+elastoresistivity ratio $\kappa_\perp/\kappa_\parallel$ shows that the
+resolvable degrees of freedom stay full for any anisotropic
 response, while the conditioning of $\mathsf A$ degrades smoothly toward the
 volumetric limit $\kappa_\perp\to\kappa_\parallel$, where the rank collapses
 to one. At the calibration-anchored ratio of ${\approx}0.21$ the in-plane
 rosette is well conditioned, so the probe design is insensitive to the
 experimentally still-open split between $\kappa_\parallel$ and $\kappa_\perp$.
 
-\begin{figure}[tb]
-  \centering
-  \includegraphics{fig_kappa}
-  \caption{Strain observability versus the elastoresistivity ratio
-  $\kappa_\perp/\kappa_\parallel$. Left: condition number of the strain map
-  $\mathsf A$, diverging as the response becomes volumetric. Right: resolvable
-  degrees of freedom, full for any anisotropic response and collapsing to one
-  in the volumetric limit. Dotted line: calibration-anchored ratio.}
-  \label{fig:kappa}
-\end{figure}
-
 \paragraph{Tensor reconstruction} On a synthetic build-height profile with a
 deliberately biased prior, the inversion~\eqref{eq:map} corrects the in-plane
 components from the rosette data, while the out-of-plane components follow the
-prior (\cref{fig:inversion}) --- exactly as the resolution diagonal predicts
-(\cref{fig:resolution}). The in-plane rosette reduces the strain RMSE from
+prior (\cref{fig:inversion}), exactly as the resolution-matrix diagonal
+predicts. The in-plane rosette reduces the strain RMSE from
 $9.4\times10^{-4}$ (prior only) to $3.9\times10^{-4}$; the out-of-plane
 $\varepsilon_{zz}$ is then recovered by the equilibrium closure below. Embedded in the pipeline, the method
 reconstructs full tensor fields; \cref{fig:fieldeqv,fig:fieldvol} show the
@@ -559,16 +551,6 @@ step for a quantitative treatment.
   corrected from the rosette data; the out-of-plane $\varepsilon_{zz}$ follows
   the prior.}
   \label{fig:inversion}
-\end{figure}
-
-\begin{figure}[tb]
-  \centering
-  \includegraphics{fig_resolution}
-  \caption{Data-resolved fraction (diagonal of the resolution matrix
-  $\mathsf R$) per strain component. The in-plane rosette resolves
-  $xx$, $yy$ and $xy$ from data but takes $zz$ and the out-of-plane shears
-  from the prior.}
-  \label{fig:resolution}
 \end{figure}
 
 \begin{figure}[tb]

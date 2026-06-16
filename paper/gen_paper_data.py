@@ -134,37 +134,6 @@ keff = [(a, float(np.array([np.cos(np.radians(a)), np.sin(np.radians(a)), 0])
         for a in ang]
 save_csv("rosette.csv", ["angle_deg", "kappa_eff"], keff)
 
-# ---- 7. observability SVD spectra (strain map) ----------------------------
-configs = {
-    "normal": ObservabilityAnalysis([np.array([0.5, 0.5, 0, 0, 0, 0])]),
-    "rosette": ObservabilityAnalysis.from_directions(
-        [direction(a) for a in (0, 60, 120)]),
-    "full": ObservabilityAnalysis.from_directions(
-        [direction(0), direction(60), direction(120),
-         direction(0, 45), direction(60, 45), direction(120, 45)]),
-}
-spec = {}
-for nm, oa in configs.items():
-    s = oa.analyse(oa.strain_map(model))["singular_values"]
-    spec[nm] = np.pad(s, (0, 6 - len(s)))
-save_csv("spectra.csv", ["index", "normal", "rosette", "full"],
-         [(i + 1, spec["normal"][i], spec["rosette"][i], spec["full"][i])
-          for i in range(6)])
-
-# ---- 8. kappa_perp/kappa_par sensitivity ----------------------------------
-kpar = -0.326 + 2 * POISSON * (-0.08)   # anchored so along-load proj = -0.326
-ros = [direction(a) for a in (0, 60, 120)]
-full = ros + [direction(a, 45) for a in (0, 60, 120)]
-krows = []
-for r in np.linspace(0.0, 0.98, 50):
-    m = ElastoResistivityModel(kappa_long=kpar, kappa_trans=r * kpar)
-    mr = evaluate_configuration(ros, m)
-    mf = evaluate_configuration(full, m)
-    krows.append((r, mr["condition_number"], mf["condition_number"],
-                  mr["rank"], mf["rank"]))
-save_csv("kappa.csv", ["ratio", "cond_ros", "cond_full", "rank_ros", "rank_full"],
-         krows)
-
 # ---- probe-design conditioning numbers (for the table/text) ---------------
 cond_naive = evaluate_configuration([direction(a) for a in (0, 45, 90)], model)["condition_number"]
 cond_delta = evaluate_configuration([direction(a) for a in (0, 60, 120)], model)["condition_number"]
@@ -212,10 +181,6 @@ for nm, idx in [("xx", 0), ("zz", 2), ("xy", 5), ("xz", 4)]:
         hdr.append(f"{tag}_{nm}")
         data_cols.append(arr * 100)   # percent
 save_csv("inv_profiles.csv", hdr, list(zip(*data_cols)))
-
-save_csv("resolution.csv", ["index", "full", "rosette"],
-         [(i + 1, inv_full.data_resolved_fraction()[i],
-           inv_ros.data_resolved_fraction()[i]) for i in range(6)])
 
 
 def rmse(a, b):

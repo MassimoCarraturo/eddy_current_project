@@ -1,0 +1,31 @@
+% Optimised in-plane rosette: three co-located directional probes at the angles
+% (22, 90, 158 deg) that minimise the strain-map condition number (to 1.93).
+\documentclass[border=2pt]{standalone}
+\input{tikz-common.tex}
+\begin{document}
+\begin{tikzpicture}[>={Latex[length=2mm]}, scale=1.15]
+  % build-surface patch (top view)
+  \fill[gray!7] (-2.5,-2.5) rectangle (2.5,2.5);
+  \draw[gray!35] (-2.5,-2.5) rectangle (2.5,2.5);
+  % reference: x = load direction (angles are measured from it)
+  \draw[gray!55, densely dashed, ->] (-2.3,0) -- (2.35,0)
+    node[right, font=\scriptsize] {$x$ (load)};
+  % three directional probes at the optimised angles
+  \foreach \a/\lab/\col in {22/{1}/oiBlue, 90/{2}/oiVermillion, 158/{3}/oiGreen}{
+    % sensing axis (a directional probe senses along +/- n)
+    \draw[\col, line width=1pt, {Latex[length=1.8mm]}-{Latex[length=1.8mm]}]
+      (\a+180:1.95) -- (\a:1.95);
+    % coil footprint near the +n end, oriented along the sensing axis
+    \begin{scope}[shift={(\a:1.2)}, rotate=\a]
+      \draw[\col, fill=\col!15, rounded corners=2pt] (-0.45,-0.17) rectangle (0.45,0.17);
+      \foreach \x in {-0.27,0,0.27}{ \draw[\col!70, line width=0.4pt] (\x,-0.17) -- (\x,0.17); }
+    \end{scope}
+    \node[\col, font=\small] at (\a:2.3) {$\hat{\bm n}_{\lab}$};
+  }
+  % angle convention: theta_1 from the load axis to n_1
+  \draw[gray, ->] (0.78,0) arc (0:22:0.78);
+  \node[gray, font=\scriptsize] at (11:1.02) {$\theta_1$};
+  % central measurement point
+  \fill[black] (0,0) circle (1.3pt);
+\end{tikzpicture}
+\end{document}
