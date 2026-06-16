@@ -13,9 +13,6 @@
       ylabel={condition number of $\mathsf{A}$},
     ]
     \addplot[oiBlue, mark=none, line width=0.9pt]
-      table[x=ratio, y=cond_full, col sep=comma] {../data/kappa.csv};
-    \addlegendentry{full set}
-    \addplot[oiOrange, mark=none, line width=0.9pt, densely dashed]
       table[x=ratio, y=cond_ros, col sep=comma] {../data/kappa.csv};
     \addlegendentry{in-plane rosette}
     \draw[gray, densely dotted] (axis cs:0.214,1) -- (axis cs:0.214,1e3);
@@ -25,8 +22,6 @@
       ymin=0, ymax=6.5, ytick={0,2,4,6},
     ]
     \addplot[oiBlue, mark=none, line width=0.9pt]
-      table[x=ratio, y=rank_full, col sep=comma] {../data/kappa.csv};
-    \addplot[oiOrange, mark=none, line width=0.9pt, densely dashed]
       table[x=ratio, y=rank_ros, col sep=comma] {../data/kappa.csv};
     \draw[gray, densely dotted] (axis cs:0.214,0) -- (axis cs:0.214,6.5);
 \end{groupplot}

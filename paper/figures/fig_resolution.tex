@@ -12,9 +12,6 @@
     xticklabels={$xx$,$yy$,$zz$,$yz$,$xz$,$xy$},
     enlarge x limits=0.12,
   ]
-  \addplot[fill=oiBlue, draw=oiBlue!60!black]
-    table[x=index, y=full, col sep=comma] {../data/resolution.csv};
-  \addlegendentry{full set}
   \addplot[fill=oiVermillion, draw=oiVermillion!60!black]
     table[x=index, y=rosette, col sep=comma] {../data/resolution.csv};
   \addlegendentry{in-plane rosette}

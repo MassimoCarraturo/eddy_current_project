@@ -1,4 +1,4 @@
-% Strain-map singular-value spectra for three probe configurations.
+% Strain-map singular-value spectra for two probe configurations.
 \documentclass[border=2pt]{standalone}
 \input{tikz-common.tex}
 \begin{document}
@@ -14,8 +14,6 @@
   \addlegendentry{normal coil (rank 1)}
   \addplot+[oiOrange]    table[x=index, y=rosette, col sep=comma] {../data/spectra.csv};
   \addlegendentry{in-plane rosette (rank 3)}
-  \addplot+[oiGreen]     table[x=index, y=full,    col sep=comma] {../data/spectra.csv};
-  \addlegendentry{rosette $+$ tilted (rank 6)}
 \end{semilogyaxis}
 \end{tikzpicture}
 \end{document}

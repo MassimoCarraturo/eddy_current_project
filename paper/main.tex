@@ -36,17 +36,16 @@ laser powder bed fusion}
 \author[pv]{M.\ Carraturo\corref{cor}}
 \ead{massimo.carraturo@unipv.it}
 \cortext[cor]{Corresponding author}
-\author[tum]{B.\,I.\ Ates}
+%\author[tum]{B.\,I.\ Ates}
 
 \affiliation[pv]{organization={Department of Civil Engineering and Architecture,
 University of Pavia}, city={Pavia}, country={Italy}}
-\affiliation[tum]{organization={Technical University of Munich},
-city={Munich}, country={Germany}}
+%\affiliation[tum]{organization={Technical University of Munich}, city={Munich}, country={Germany}}
 
 \begin{abstract}
 Eddy-current testing (ECT) is an attractive in-situ probe for laser powder bed
 fusion (LPBF): it is non-contact, fast, and sensitive to the electrical
-conductivity, which depends on mechanical strain. A calibrated scalar law
+conductivity. A calibrated scalar law
 relates the relative conductivity change to uniaxial strain, but the residual
 strain in an as-built part is a second-order tensor while a coil reports a
 single scalar impedance, so reconstructing six strain components from one
@@ -55,16 +54,13 @@ ingredients: a tensorial elastoresistivity model that generalises the scalar
 coefficient to a fourth-order coupling tensor; a finite-element reciprocity
 analysis that quantifies which conductivity components a probe senses; optimal
 design of directional-probe sets --- a conductivity rosette; and a regularised
-maximum-a-posteriori inversion that fuses the measurements with a
-thermomechanical process simulation. An axisymmetric eddy-current finite-element
-model, verified to better than $10^{-5}$ by an ohmic-energy balance, agrees
-with the analytical model to \SI{0.9}{\percent} in resistance and
-\SI{2.8}{\percent} in reactance. On synthetic LPBF builds a normal coil
-resolves one strain degree of freedom, an in-plane rosette three, and a tilted
-six-probe set all six; the simulation prior supplies the components the probes
-cannot observe. A bonded-probe tensile campaign on additively manufactured 316L
-corroborates the model, resolving a strain-borne conductivity change of the
-predicted sign and magnitude. The complete workflow is implemented in an open,
+maximum-a-posteriori inversion that fuses the measurements with offline data, coming, e.g, from
+thermomechanical process simulation. 
+On synthetic LPBF builds a normal coil
+resolves one strain degree of freedom and an in-plane rosette three; the offline
+prior supplies the components the probes cannot observe.
+A bonded-probe tensile campaign on additively manufactured 316L corroborates the model, resolving a strain-borne conductivity change of the predicted sign and magnitude. 
+The complete workflow is implemented in an open,
 tested pipeline that outputs full strain-tensor fields.
 \end{abstract}
 
@@ -96,7 +92,6 @@ ECT senses strain indirectly.
 A calibrated scalar law,
 \begin{equation}
   \frac{\dsig}{\sigma_0} = \kappa\,\varepsilon,
-  \qquad \kappa = -0.326 \quad(\text{316L}),
   \label{eq:scalar}
 \end{equation}
 relates the relative change of the conductivity about its unstrained value
@@ -110,11 +105,9 @@ six numbers from one is impossible without additional information.
 That conductivity responds to elastic strain underpins an established line of
 eddy-current residual-stress assessment: apparent-conductivity spectroscopy and
 iterative inversion recover near-surface residual-stress depth profiles in
-shot-peened superalloys~\cite{yu2004,abunabah2006,abunabah2007}. The same work
-exposed a key confounder --- cold work and dislocation-density changes alter
-conductivity alongside elastic strain --- which is especially pronounced in
-LPBF microstructures and which we revisit in \cref{sec:results}. In metal
-additive manufacturing, recoater-mounted ECT already monitors layer-wise
+shot-peened superalloys~\cite{yu2004,abunabah2006,abunabah2007}. 
+%The same work exposed a key confounder --- cold work and dislocation-density changes alter conductivity alongside elastic strain --- which is especially pronounced in LPBF microstructures and which we revisit in \cref{sec:results}.
+In metal additive manufacturing, recoater-mounted ECT already monitors layer-wise
 density and defects~\cite{spurek2022,monu2025}, with part-temperature
 compensation shown to be essential~\cite{spurek2024}; strain, however, is not
 yet mapped in~situ.
@@ -133,8 +126,9 @@ deployment we target is sketched in \cref{fig:overview}.
   \caption{Proposed deployment, doubling as a graphical abstract. A
   recoater-mounted, multi-frequency directional-probe rosette scans each
   deposited layer; the directional measurements
-  $y=\hat{\bm n}^{\!\top}\sig\,\hat{\bm n}$ are fused with a thermomechanical
-  process-simulation prior by a regularised maximum-a-posteriori inversion to
+  $y=\hat{\bm n}^{\!\top}\sig\,\hat{\bm n}$ are fused with an offline prior ---
+  an estimate of the as-built stress field, e.g.\ from a thermomechanical
+  process simulation --- by a regularised maximum-a-posteriori inversion to
   reconstruct the strain-tensor field $\varepsilon_{ij}(\bm x)$.}
   \label{fig:overview}
 \end{figure}
@@ -144,8 +138,7 @@ the tensorial framework: the eddy-current forward model and its FEM verification
 (\cref{sec:forward}), the elastoresistivity tensor that replaces the scalar law
 (\cref{sec:tensor}), the observability analysis and directional-probe design
 (\cref{sec:obs}), and the prior-informed tensor inversion and pipeline
-(\cref{sec:inv}). \Cref{sec:results} reports the results and discusses them
-together---forward-model cross-validation, the resolvable strain components, the
+(\cref{sec:inv}). \Cref{sec:results} reports the results and discusses them: forward-model cross-validation, the resolvable strain components, the
 probe-design trade-offs, reconstruction accuracy on a synthetic build, the
 recovery of the out-of-plane strain by mechanical equilibrium, and an experimental
 corroboration on additively manufactured 316L. \Cref{sec:conclusions}
@@ -199,8 +192,8 @@ in the meridional $(\rho,z)$ plane:
   \label{eq:weak}
 \end{equation}
 The Dirichlet condition $A_\phi=0$ is imposed on the symmetry axis ($\rho=0$,
-where the azimuthal component must vanish) and on the truncated outer boundary;
-without it, the $1/\rho^2$ term renders the system singular. The computational
+where the azimuthal component must vanish) and on the truncated outer boundary. 
+The computational
 domain (\cref{fig:domain}) comprises four regions: the conductor bulk; a
 near-surface conductor \emph{skin layer} meshed at one third of the skin depth
 $\delta=\sqrt{2/(\omega\mu\sigma)}$, which resolves the exponential decay of
@@ -277,12 +270,11 @@ transverse coefficient $\kappa_\perp$,
 The scalar law~\eqref{eq:scalar} is the uniaxial projection of
 \eqref{eq:tensor}: in a uniaxial-stress test, the relative conductivity change
 sensed along a unit direction $\hat{\bm n}$ is
-$\hat{\bm n}^{\!\top}(\dsig/\sigma_0)\hat{\bm n}$, which varies strongly with
-$\hat{\bm n}$ (\cref{fig:rosette}). A single uniaxial test therefore fixes only
+$\hat{\bm n}^{\!\top}(\dsig/\sigma_0)\hat{\bm n}$. 
+A single uniaxial test therefore fixes only
 one projection of $\Kt$. We anchor $\kappa_\parallel$ so that the along-load
 projection reproduces the measured scalar,
-$\kappa_\parallel-2\nu\kappa_\perp=-0.326$ at Poisson ratio $\nu=0.30$, giving
-$\kappa_\parallel=-0.374$ for an illustrative $\kappa_\perp=-0.08$. Crucially,
+$\kappa_\parallel-2\nu\kappa_\perp$ at Poisson ratio $\nu$. Crucially,
 the observability results below depend on these constants only through the
 ratio $\kappa_\perp/\kappa_\parallel$; separating the two requires
 multi-orientation loading. In the purely volumetric limit
@@ -314,15 +306,12 @@ conductivity along its sensing direction,
 the conductivity analogue of a mechanical strain-gauge rosette.
 \Cref{eq:proj} is a leading-order model: it assumes the probe drives current
 cleanly along $\hat{\bm n}$. From the build surface this is well justified
-in-plane but optimistic out-of-plane, because eddy currents flow essentially
-parallel to the surface --- the axisymmetric result above makes this exact. A
-coil merely tilted above the surface therefore gains only limited
-$\sigma_{zz}$ sensitivity; genuine out-of-plane access requires edge or side
-probing, elongated or rotating-field probes, or multi-frequency depth
-profiling. We accordingly treat the six-direction, full-rank configuration
-below as an \emph{upper bound} on what directional diversity can deliver, and
-regard the in-plane rosette combined with the simulation prior of
-\cref{sec:inv} as the practical configuration.
+in-plane but not out-of-plane, because eddy currents flow essentially parallel to the surface --- the axisymmetric result above makes this exact. 
+A coil merely tilted above the surface gains only limited $\sigma_{zz}$
+sensitivity, and genuine out-of-plane access would require edge or side probing,
+elongated or rotating-field probes, or multi-frequency depth profiling. We
+therefore propose an in-plane rosette design --- which resolves the three in-plane components --- and supply the unobserved out-of-plane components from the offline
+prior of \cref{sec:inv} and from mechanical equilibrium.
 
 Stacking $M$ probes gives a linear map
 $\bm y=\mathsf{M}\,\bm\sigma_{\mathrm v}$ from the conductivity Voigt vector
@@ -332,14 +321,14 @@ $\mathsf{A}=\sigma_0\,\mathsf{M}\,\Kt$. The singular value decomposition of
 $\mathsf A$ exposes the resolvable rank, the conditioning, and the null space
 --- the blind strain directions. We design probe sets by minimising the
 condition number of $\mathsf A$ subject to a rank constraint; the resolvable
-ceiling is $\operatorname{rank}\Kt$, so directional diversity helps only
-insofar as the elastoresistive response is anisotropic. Excitation frequency
-adds a complementary, depth-selective degree of freedom through $\delta$.
+ceiling is $\operatorname{rank}\Kt$, so directional variation helps only as long as the elastoresistive response is anisotropic.
 
 \subsection{Prior-informed tensor inversion and pipeline}\label{sec:inv}
 Realistic probe sets are rank-deficient. We therefore estimate the strain by
 maximum-a-posteriori (MAP) inversion~\cite{aster2018}, fusing the measurements
-with a process-simulation prior $\eps_{\mathrm{prior}}$. With Gaussian
+with an offline prior $\eps_{\mathrm{prior}}$ --- an estimate of the as-built
+stress/strain field, for which a thermomechanical process simulation is one
+example source. With Gaussian
 measurement noise of standard deviation $\sigma_d$ and an independent,
 identically distributed Gaussian prior of standard deviation $\sigma_p$,
 \begin{equation}
@@ -356,13 +345,13 @@ supplied by the data: a diagonal entry of $1$ marks a measurement-determined
 component, $0$ one taken from the prior. Where only a normal-coil scalar is
 available, the estimate degrades gracefully to the volumetric strain through
 the invariant coupling $\kappa_v=(\kappa_\parallel+2\kappa_\perp)/3$. A full
-prior covariance estimated from an ensemble of process simulations would
+prior covariance estimated from an ensemble of such offline models would
 replace the scalar $\lambda$ and is a natural refinement.
 
-The forward models, the observability and design tools, and the inversion are
-combined in an open pipeline that ingests layer-wise ECT data and returns both
-the reconstructed geometry and, from directional measurements, a full
-strain-tensor field; the implementation is covered by an automated test suite.
+%The forward models, the observability and design tools, and the inversion are
+%combined in an open pipeline that ingests layer-wise ECT data and returns both
+%the reconstructed geometry and, from directional measurements, a full
+%strain-tensor field.
 
 \subsection{Experimental setup and conductivity calibration}\label{sec:experiment}
 The framework's central premise --- that a surface eddy-current probe resolves a
@@ -373,8 +362,7 @@ tension on a servo-hydraulic frame. Each coupon is \SI{116}{\milli\metre} long
 with a \SI{10}{\milli\metre}$\times$\SI{2}{\milli\metre} gauge (area
 ${\approx}\SI{20.5}{\milli\metre\squared}$, from the part CAD), so the load cell
 fixes the gauge stress directly. An eddy-current probe was bonded to the gauge
-surface and driven at \SI{240.4}{\kilo\hertz} throughout each test, logging the
-in- and out-of-phase response at ${\sim}\SI{380}{\hertz}$.
+surface and driven at \SI{240.4}{\kilo\hertz} throughout each test.
 
 The bonded mount fixes the nominal lift-off, but residual contact variation still
 biases the raw signal, so we calibrate it out. A separate frequency--lift-off
@@ -407,12 +395,12 @@ whose response leaves the calibrated grid are discarded.
 % ======================================================================
 \section{Results and discussion}\label{sec:results}
 % ======================================================================
-\paragraph{Forward-model verification} The finite-element model is mesh
-converged: order-three and order-four solutions agree to five significant
-figures. It is also internally consistent: the resistance extracted from the
-flux linkage~\eqref{eq:flux} equals an independent volume integral of the
-ohmic loss, $\tfrac12\!\int\sigma|\bm E|^2\,\mathrm{d}V$, to better than
-$10^{-5}$. For the reference parameters of \cref{tab:params}, the air
+\paragraph{Forward-model verification} The finite-element model is mesh converged: order-three and order-four solutions agree to five significant figures. 
+%It is also internally consistent: the resistance extracted from the
+%flux linkage~\eqref{eq:flux} equals an independent volume integral of the
+%ohmic loss, $\tfrac12\!\int\sigma|\bm E|^2\,\mathrm{d}V$, to better than
+%$10^{-5}$. 
+For the reference parameters of \cref{tab:params}, the air
 impedance is purely inductive, $Z_0=\mathrm{j}\,5.18\times10^{4}\,\si{\ohm}$,
 while the loaded impedance, $Z=(622+\mathrm{j}\,3.73\times10^{4})\,\si{\ohm}$,
 shows that eddy currents add resistance and reduce reactance. Analytical and
@@ -423,10 +411,11 @@ half-space. The integral~\eqref{eq:dd} is converged for
 $k_{\max}\sim6000$, within a stable plateau before the oscillatory kernel
 degrades the quadrature, and the reciprocity relation~\eqref{eq:recip} matches
 finite-difference re-solves with a ratio that approaches unity as the
-perturbation shrinks (\cref{fig:femconv}). Maintaining two dissimilar forward
-models is what makes such checks possible at all: an inverse method that
-re-uses one model for both synthesis and inversion cannot detect its own
-forward-model errors.
+perturbation shrinks (\cref{fig:femconv}). 
+%Maintaining two dissimilar forward
+%models is what makes such checks possible at all: an inverse method that
+%re-uses one model for both synthesis and inversion cannot detect its own
+%forward-model errors.
 
 \begin{figure}[tb]
   \centering
@@ -461,12 +450,11 @@ senses only the in-plane mean conductivity, and the effective $\kappa$ it
 reports depends on the sensing direction --- swinging from $-0.35$ along the
 load to $+0.06$ transverse to it (\cref{fig:rosette}). Stacking directional
 probes and analysing the strain map $\mathsf A$ quantifies the resolving
-power: a normal coil resolves one strain degree of freedom, an in-plane
-rosette three, and a six-direction tilted set all six
-(\cref{fig:spectra}, \cref{tab:obs}); the tilted-set figure presumes the
-idealised out-of-plane access discussed in \cref{sec:obs} and is an upper
-bound. Optimising the in-plane angles improves the conditioning from $2.57$
-($0/45/90$) and $2.18$ ($0/60/120$) to $1.93$.
+power: a normal coil resolves one strain degree of freedom and an in-plane
+rosette three (\cref{fig:spectra}, \cref{tab:obs}); from the build surface the
+out-of-plane components remain unobservable. Optimising the in-plane angles
+improves the conditioning from $2.57$ ($0/45/90$) and $2.18$ ($0/60/120$) to
+$1.93$.
 
 \begin{figure}[tb]
   \centering
@@ -501,18 +489,17 @@ bound. Optimising the in-plane angles improves the conditioning from $2.57$
 \begin{figure}[tb]
   \centering
   \includegraphics{fig_spectra}
-  \caption{Singular-value spectra of the strain map $\mathsf A$ for three
+  \caption{Singular-value spectra of the strain map $\mathsf A$ for two
   probe configurations. The number of non-negligible singular values is the
-  number of resolvable strain degrees of freedom: one (normal coil), three
-  (in-plane rosette), six (rosette with tilted probes).}
+  number of resolvable strain degrees of freedom: one (normal coil) and three
+  (in-plane rosette).}
   \label{fig:spectra}
 \end{figure}
 
 \begin{table}[tb]
   \centering
   \caption{Resolvable strain degrees of freedom and conditioning of the strain
-  map by probe set. The six-probe row presumes idealised out-of-plane access
-  and is an upper bound.}
+  map by probe configuration.}
   \label{tab:obs}
   \begin{tabular}{lcc}
     \toprule
@@ -522,7 +509,6 @@ bound. Optimising the in-plane angles improves the conditioning from $2.57$
     In-plane rosette ($0/45/90$)  & 3 & 2.57\\
     In-plane rosette ($0/60/120$) & 3 & 2.18\\
     Optimised in-plane rosette    & 3 & 1.93\\
-    Rosette $+$ tilted probes (6) & 6 & 2.50\\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -533,10 +519,9 @@ elastoresistivity ratio $\kappa_\perp/\kappa_\parallel$ (\cref{fig:kappa})
 shows that the resolvable degrees of freedom stay full for any anisotropic
 response, while the conditioning of $\mathsf A$ degrades smoothly toward the
 volumetric limit $\kappa_\perp\to\kappa_\parallel$, where the rank collapses
-to one. At the calibration-anchored ratio of ${\approx}0.21$ both the rosette
-and the full set are well conditioned, so the probe design is insensitive to
-the experimentally still-open split between $\kappa_\parallel$ and
-$\kappa_\perp$.
+to one. At the calibration-anchored ratio of ${\approx}0.21$ the in-plane
+rosette is well conditioned, so the probe design is insensitive to the
+experimentally still-open split between $\kappa_\parallel$ and $\kappa_\perp$.
 
 \begin{figure}[tb]
   \centering
@@ -551,12 +536,11 @@ $\kappa_\perp$.
 
 \paragraph{Tensor reconstruction} On a synthetic build-height profile with a
 deliberately biased prior, the inversion~\eqref{eq:map} corrects the in-plane
-components from data under both probe sets, while the out-of-plane components
-are recovered only by the full set and otherwise follow the prior
-(\cref{fig:inversion}) --- exactly as the resolution diagonal predicts
-(\cref{fig:resolution}). Over all six components, the full set reduces the
-strain RMSE from $9.4\times10^{-4}$ (prior only) to $2.6\times10^{-4}$, the
-in-plane rosette to $3.9\times10^{-4}$. Embedded in the pipeline, the method
+components from the rosette data, while the out-of-plane components follow the
+prior (\cref{fig:inversion}) --- exactly as the resolution diagonal predicts
+(\cref{fig:resolution}). The in-plane rosette reduces the strain RMSE from
+$9.4\times10^{-4}$ (prior only) to $3.9\times10^{-4}$; the out-of-plane
+$\varepsilon_{zz}$ is then recovered by the equilibrium closure below. Embedded in the pipeline, the method
 reconstructs full tensor fields; \cref{fig:fieldeqv,fig:fieldvol} show the
 von-Mises-equivalent and volumetric strain fields recovered on a
 $50\times36$ grid of a synthetic build, the volumetric strain evolving from
@@ -569,10 +553,9 @@ step for a quantitative treatment.
   \centering
   \includegraphics{fig_inversion}
   \caption{Tensor-strain reconstruction along the build height with a biased
-  simulation prior (noise level $10^{-4}$). The in-plane component
-  $\varepsilon_{xx}$ is corrected from data by both probe sets; the
-  out-of-plane $\varepsilon_{zz}$ is recovered only by the full set and
-  otherwise follows the prior.}
+  prior (noise level $10^{-4}$). The in-plane component $\varepsilon_{xx}$ is
+  corrected from the rosette data; the out-of-plane $\varepsilon_{zz}$ follows
+  the prior.}
   \label{fig:inversion}
 \end{figure}
 
@@ -582,7 +565,7 @@ step for a quantitative treatment.
   \caption{Data-resolved fraction (diagonal of the resolution matrix
   $\mathsf R$) per strain component. The in-plane rosette resolves
   $xx$, $yy$ and $xy$ from data but takes $zz$ and the out-of-plane shears
-  from the prior; the full set resolves all six.}
+  from the prior.}
   \label{fig:resolution}
 \end{figure}
 
@@ -619,8 +602,8 @@ with Poisson ratio $\nu$. For a build whose residual field varies mainly through
 the height (laterally homogeneous), interior equilibrium propagates this
 plane-stress state to every depth, so \cref{eq:closure} holds through the column;
 lateral gradients make $\sigma_{zz}$ nonzero and require the full elastic
-boundary-value problem, the natural role of the process simulation, which we
-discharge next.
+boundary-value problem, the natural role of an offline model such as a
+thermomechanical simulation, which we discharge next.
 \Cref{eq:closure} is three linear constraints on $\eps_{\mathrm v}$; stacking them
 with the measurement map renders the rank-deficient inverse problem full-rank, so
 an in-plane rosette resolves all six components --- three from data, three from
@@ -747,11 +730,11 @@ for whatever remains unobservable from the surface, prior information fused by
 regularised inversion. Within this framework: a verified axisymmetric
 finite-element model agrees with the analytical Dodd--Deeds solution to
 \SI{0.9}{\percent} in resistance and \SI{2.8}{\percent} in reactance; a normal
-coil resolves one strain degree of freedom, an in-plane rosette three (best
-conditioning $1.93$), and a tilted six-probe set up to six; and the
-maximum-a-posteriori inversion reduces the strain RMSE on a synthetic build
-from $9.4\times10^{-4}$ (prior only) to $2.6\times10^{-4}$ with the full set
-and $3.9\times10^{-4}$ with the practical in-plane rosette.
+coil resolves one strain degree of freedom and an in-plane rosette three (best
+conditioning $1.93$); and the maximum-a-posteriori inversion reduces the strain
+RMSE on a synthetic build from $9.4\times10^{-4}$ (prior only) to
+$3.9\times10^{-4}$ with the in-plane rosette, the out-of-plane components
+supplied by the prior and mechanical equilibrium.
 
 Two limitations bound the present study. Out-of-plane observability is weak from
 the build surface; mechanical equilibrium closes much of the gap --- the
@@ -765,9 +748,9 @@ only up to one uniaxial projection; multi-orientation tests are needed to
 separate $\kappa_\parallel$ from $\kappa_\perp$ and to characterise the
 as-built anisotropy of $\sigma_0$ in columnar LPBF microstructures. Future
 work targets a three-dimensional anisotropic eddy-current model to quantify
-the true out-of-plane sensitivity of tilted and elongated probes, experimental
-validation against multi-orientation and benchmark~\cite{burke1988} data, and
-deployment of the pipeline for in-situ monitoring.
+out-of-plane sensitivity directly, experimental validation against
+multi-orientation and benchmark~\cite{burke1988} data, and deployment of the
+pipeline for in-situ monitoring.
 
 % ----------------------------------------------------------------------
 \section*{Code and data availability}
