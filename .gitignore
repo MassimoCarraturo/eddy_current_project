@@ -15,11 +15,28 @@ env/
 *.jpg
 *.jpeg
 *.gif
+*.bmp
+*.tiff
 *.pdf
 
-# Exception: irreproducible experimental source photograph (primary data the
-# setup figure needs, not a generated artifact)
-!paper/figures/exp_specimens.jpg
+# Simulation / postprocessing output
+*.vtu
+*.pvtu
+*.vtk
+*.vtp
+*.vts
+*.vtr
+*.vti
+*.pvd
+*.h5
+*.hdf5
+*.xdmf
+
+# Meshes and binary arrays (ask before tracking any of these)
+*.msh
+*.stl
+*.npz
+*.npy
 
 # Local-only outputs
 docs/
