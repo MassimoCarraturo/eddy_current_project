@@ -45,6 +45,16 @@
   },
 }
 
+% Drop-in style for when no in-axis corner is free of data: parks the legend
+% just outside the right edge of the axis so it never covers lines or markers.
+% Usage: add `legend outside` to the axis options (overrides any legend pos).
+\pgfplotsset{
+  legend outside/.style={
+    legend style={at={(1.02,1)}, anchor=north west},
+    legend cell align=left,
+  },
+}
+
 % ---- Flowchart / schematic styles --------------------------------------
 \tikzset{
   block/.style={draw, rounded corners=2pt, align=center,

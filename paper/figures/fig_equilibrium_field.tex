@@ -13,7 +13,7 @@
   % ---- panel 1: eps_zz profile, true (FE) vs surface closure ----
   \nextgroupplot[
       ylabel={$\varepsilon_{zz}$ (\si{\percent})},
-      legend pos=north west, legend style={font=\scriptsize},
+      legend pos=south east, legend style={font=\scriptsize},
     ]
     \addplot[black, line width=0.9pt]
       table[x=z, y=true_zz, col sep=comma] {../data/eq_field_profile.csv};
@@ -31,8 +31,6 @@
       table[x=z, y=sigma_zz_norm, col sep=comma] {../data/eq_field_profile.csv};
     \addlegendentry{$\sigma_{zz}$ (FE)}
     \draw[gray, densely dotted] (axis cs:0,0) -- (axis cs:1,0);
-    \node[anchor=north east, font=\scriptsize, gray] at (rel axis cs:0.97,0.97)
-      {free top $\to 0$};
 \end{groupplot}
 \end{tikzpicture}
 \end{document}
