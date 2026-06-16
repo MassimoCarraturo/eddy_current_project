@@ -364,6 +364,46 @@ combined in an open pipeline that ingests layer-wise ECT data and returns both
 the reconstructed geometry and, from directional measurements, a full
 strain-tensor field; the implementation is covered by an automated test suite.
 
+\subsection{Experimental setup and conductivity calibration}\label{sec:experiment}
+The framework's central premise --- that a surface eddy-current probe resolves a
+strain-borne conductivity change --- was tested on additively manufactured 316L.
+Twenty-three flat dogbone coupons were produced by laser powder bed fusion at the
+University of Pavia; eleven (\cref{fig:setup}) were loaded to failure in uniaxial
+tension on a servo-hydraulic frame. Each coupon is \SI{116}{\milli\metre} long
+with a \SI{10}{\milli\metre}$\times$\SI{2}{\milli\metre} gauge (area
+${\approx}\SI{20.5}{\milli\metre\squared}$, from the part CAD), so the load cell
+fixes the gauge stress directly. An eddy-current probe was bonded to the gauge
+surface and driven at \SI{240.4}{\kilo\hertz} throughout each test, logging the
+in- and out-of-phase response at ${\sim}\SI{380}{\hertz}$.
+
+The bonded mount fixes the nominal lift-off, but residual contact variation still
+biases the raw signal, so we calibrate it out. A separate frequency--lift-off
+sweep (\SIrange{231.5}{297.6}{\kilo\hertz}; lift-offs
+\SIrange{0}{1000}{\micro\metre}) records the response over that grid, and a
+radial-basis interpolant inverts it to map a measured
+$(\operatorname{Re},\operatorname{Im})$ pair to an effective frequency
+$f_{\mathrm{eff}}$. Because the eddy-current response depends on the product
+$\omega\sigma$ --- the skin depth scales as $(\omega\sigma)^{-1/2}$ --- at the
+fixed drive frequency $f_0$ a conductivity change is indistinguishable from a
+frequency change, so $f_{\mathrm{eff}}/f_0=\sigma/\sigma_0$ and
+\begin{equation}
+  \frac{\Delta\sigma}{\sigma_0}=\frac{\Delta f_{\mathrm{eff}}}{f_{\mathrm{eff}}} .
+  \label{eq:feff}
+\end{equation}
+The effective frequency is thus a lift-off-invariant conductivity proxy; samples
+whose response leaves the calibrated grid are discarded.
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics{fig_setup}
+  \caption{The eleven laser-powder-bed-fused 316L tensile coupons (numbered) of
+  the validation campaign. Each is a flat dogbone, \SI{116}{\milli\metre} long
+  with a \SI{10}{\milli\metre}$\times$\SI{2}{\milli\metre} gauge; an eddy-current
+  probe was bonded to the gauge surface and driven at \SI{240.4}{\kilo\hertz}
+  during uniaxial tension.}
+  \label{fig:setup}
+\end{figure}
+
 % ======================================================================
 \section{Results and discussion}\label{sec:results}
 % ======================================================================
@@ -663,28 +703,25 @@ case, not a 316L prediction. None of this undermines the framework; it
 specifies the instrument --- a thermally referenced, multi-frequency,
 directional-probe rosette.
 
-\paragraph{Experimental corroboration} A companion campaign at the University of
-Pavia tested additively manufactured 316L tensile specimens (flat gauge
-\SI{10}{\milli\metre}$\times$\SI{2}{\milli\metre}, area
-${\approx}\SI{20.5}{\milli\metre\squared}$) with an eddy-current probe bonded to
-the gauge surface and driven at \SI{240}{\kilo\hertz}. A separate
-frequency--lift-off calibration, inverted by a radial-basis interpolant, maps the
-measured in- and out-of-phase response to a lift-off-invariant conductivity
-proxy: the eddy-current response depends on the product $\omega\sigma$, so at a
-fixed drive frequency the proxy tracks $\sigma$ and $\Delta\sigma/\sigma_0$
-follows the frequency it reports. \Cref{fig:experiment} shows the recovered
-$\Delta\sigma/\sigma_0$ for six specimens. The conductivity \emph{decreases}
-monotonically under tension --- the sign demanded by $\kappa<0$ --- by a median
-of ${\approx}\SI{0.7}{\percent}$ at the peak load (${\approx}\SI{490}{\mega\pascal}$,
-i.e. at yield), consistent in magnitude with the scalar law \eqref{eq:scalar} at
-the percent-level strains reached. The change is irreversible --- it does not
-recover --- confirming that a tensile-to-yield test is dominated by the plastic
-and cold-work response anticipated above, not by the reversible elastoresistive
-coupling; isolating the elastic $\kappa$ would require controlled elastic-range
-loading with synchronized, thermally referenced acquisition. The measurement
-nonetheless demonstrates the central premise: bonded eddy-current sensing
-resolves a strain-borne conductivity change of the expected sign and order of
-magnitude in real LPBF 316L.
+\paragraph{Experimental corroboration} Applying the lift-off-compensated proxy
+\eqref{eq:feff} of \cref{sec:experiment} to the bonded-probe records yields the
+relative conductivity change of \cref{fig:experiment}. Across the specimens the
+conductivity \emph{decreases} monotonically under tension --- the sign demanded
+by $\kappa<0$ --- by a median of ${\approx}\SI{0.7}{\percent}$ at the peak load
+(${\approx}\SI{490}{\mega\pascal}$, i.e.\ at yield), consistent in magnitude with
+the scalar law \eqref{eq:scalar} at the percent-level strains reached. The change
+is irreversible --- it does not recover over the long plastic plateau --- so a
+tensile-to-failure test is dominated by the plastic and cold-work response
+flagged above, not by the reversible elastoresistive coupling. Two artefacts of
+this first campaign compound the point: the elastic ramp lasts under
+\SI{10}{\second} of a ${\sim}\SI{100}{\second}$ test, and the eddy-current and
+tensile acquisitions were started a few seconds apart, so a clean elastic slope
+--- and hence a direct measurement of $\kappa$ --- cannot be read from these
+records. Isolating the elastic coefficient therefore calls for slow, controlled
+elastic-range loading with synchronized, thermally referenced acquisition, as the
+instrument requirements above already imply. The campaign nonetheless confirms
+the central premise: bonded eddy-current sensing resolves a strain-borne
+conductivity change of the expected sign and order of magnitude in real LPBF 316L.
 
 \begin{figure}[tb]
   \centering

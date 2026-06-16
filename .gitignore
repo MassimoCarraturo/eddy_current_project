@@ -17,6 +17,10 @@ env/
 *.gif
 *.pdf
 
+# Exception: irreproducible experimental source photograph (primary data the
+# setup figure needs, not a generated artifact)
+!paper/figures/exp_specimens.jpg
+
 # Local-only outputs
 docs/
 
