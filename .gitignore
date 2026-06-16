@@ -48,15 +48,5 @@ mlhp/
 # Local analysis scripts (environment-specific data paths; not part of the published project)
 experiments/
 
-# LaTeX build artifacts
-*.aux
-*.bbl
-*.blg
-*.log
-*.out
-*.fls
-*.fdb_latexmk
-*.synctex.gz
-*.spl
-*.buildlog
-*.rerun.log
+# Manuscript (kept locally; not part of this repository)
+paper/
