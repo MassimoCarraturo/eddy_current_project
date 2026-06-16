@@ -74,11 +74,16 @@ try:
     from src.fem_impedance.coil_impedance import FEMCoilImpedance
     from src.fem_impedance.sensitivity import validate_reciprocity, sensitivity_grid
 
-    fem = FEMCoilImpedance(coil=coil, material=material)
-    res = fem.setup_and_solve()
-    zf = res["impedance_normalized"]
-    fem_point = (zf.real, zf.imag)
-    save_csv("fem_point.csv", ["re", "im"], [fem_point])
+    # FEM verification points spanning the analytical locus (a fresh,
+    # skin-depth-adapted mesh per conductivity keeps each point accurate).
+    fem_sigmas = [1.0e5, 1.0e6, 3.16e6, 1.0e7, 16.2e6]
+    fem_rows = []
+    for _sig in fem_sigmas:
+        _zf = FEMCoilImpedance(coil=coil, material=MaterialParams(sigma=_sig)
+                               ).setup_and_solve()["impedance_normalized"]
+        fem_rows.append((_sig, _zf.real, _zf.imag))
+    fem_point = fem_rows[4]  # reference 16.2 MS/m point
+    save_csv("fem_point.csv", ["sigma", "re", "im"], fem_rows)
 
     # 4b. reciprocity ratio vs perturbation
     rec_rows = []

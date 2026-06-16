@@ -403,11 +403,11 @@ whose response leaves the calibrated grid are discarded.
 For the reference parameters of \cref{tab:params}, the air
 impedance is purely inductive, $Z_0=\mathrm{j}\,5.18\times10^{4}\,\si{\ohm}$,
 while the loaded impedance, $Z=(622+\mathrm{j}\,3.73\times10^{4})\,\si{\ohm}$,
-shows that eddy currents add resistance and reduce reactance. Analytical and
-finite-element normalised impedances agree to \SI{0.9}{\percent} in resistance
-and \SI{2.8}{\percent} in reactance (\cref{fig:impedance}); the small reactance
-residual reflects the finite computational domain versus the analytical
-half-space. The integral~\eqref{eq:dd} is converged for
+shows that eddy currents add resistance and reduce reactance. Across five conductivities spanning the locus, analytical and
+finite-element normalised impedances agree to within \SI{0.9}{\percent} in
+resistance and \SIrange{2.8}{5.8}{\percent} in reactance (\cref{fig:impedance});
+the reactance residual grows toward low conductivity, where the larger skin
+depth feels the finite computational domain versus the analytical half-space. The integral~\eqref{eq:dd} is converged for
 $k_{\max}\sim6000$, within a stable plateau before the oscillatory kernel
 degrades the quadrature, and the reciprocity relation~\eqref{eq:recip} matches
 finite-difference re-solves with a ratio that approaches unity as the
@@ -423,10 +423,12 @@ perturbation shrinks (\cref{fig:femconv}).
   \caption{Normalised-impedance locus traced by the analytical model
   \eqref{eq:dd} as the conductivity sweeps
   $\sigma\in[10^{4},10^{8}]\,\si{\siemens\per\metre}$, for the reference coil
-  of \cref{tab:params} at \SI{240}{\kilo\hertz}. The star marks the
-  finite-element result at
-  $\sigma=\SI{16.2}{\mega\siemens\per\metre}$; the two models agree to
-  \SI{0.9}{\percent} in resistance and \SI{2.8}{\percent} in reactance.}
+  of \cref{tab:params} at \SI{240}{\kilo\hertz}. Stars mark independent
+  finite-element results at five conductivities along the locus ($\sigma$ from
+  $10^{5}$ to \SI{16.2}{\mega\siemens\per\metre}); analytical and FEM agree to
+  within \SI{0.9}{\percent} in resistance and \SIrange{2.8}{5.8}{\percent} in
+  reactance, the reactance residual growing at low $\sigma$ where the skin depth
+  approaches the finite domain.}
   \label{fig:impedance}
 \end{figure}
 
@@ -728,8 +730,9 @@ A scalar impedance constrains one projection of the conductivity tensor;
 reconstructing the strain tensor therefore requires measurement diversity and,
 for whatever remains unobservable from the surface, prior information fused by
 regularised inversion. Within this framework: a verified axisymmetric
-finite-element model agrees with the analytical Dodd--Deeds solution to
-\SI{0.9}{\percent} in resistance and \SI{2.8}{\percent} in reactance; a normal
+finite-element model agrees with the analytical Dodd--Deeds solution to within
+\SI{0.9}{\percent} in resistance and \SIrange{2.8}{5.8}{\percent} in reactance
+across the conductivity range; a normal
 coil resolves one strain degree of freedom and an in-plane rosette three (best
 conditioning $1.93$); and the maximum-a-posteriori inversion reduces the strain
 RMSE on a synthetic build from $9.4\times10^{-4}$ (prior only) to
