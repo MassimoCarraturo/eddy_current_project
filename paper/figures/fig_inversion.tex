@@ -9,7 +9,7 @@
     xlabel={build height (norm.)},
     ylabel={strain (\si{\percent})},
   ]
-  \nextgroupplot[title={$\varepsilon_{xx}$ (in-plane)}, legend pos=north west,
+  \nextgroupplot[title={$\varepsilon_{xx}$ (in-plane)}, legend below columns=2,
                  legend style={font=\scriptsize}]
     \addplot[black, line width=0.9pt]       table[x=z,y=true_xx, col sep=comma]{../data/inv_profiles.csv};
     \addlegendentry{true}

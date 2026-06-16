@@ -12,7 +12,7 @@
   \nextgroupplot[
       xlabel={build height (norm.)},
       ylabel={$\varepsilon_{zz}$ (\si{\percent})},
-      legend pos=north west, legend style={font=\scriptsize},
+      legend below columns=2, legend style={font=\scriptsize},
     ]
     \addplot[black, line width=0.9pt]
       table[x=z, y=true_zz, col sep=comma] {../data/eq_profile.csv};
@@ -33,7 +33,7 @@
       ymin=0, ymax=1.1,
       xtick={1,2,3,4,5,6},
       xticklabels={$xx$,$yy$,$zz$,$yz$,$xz$,$xy$},
-      legend pos=south east, legend style={font=\scriptsize},
+      legend style={font=\scriptsize},
       enlarge x limits=0.12,
     ]
     \addplot[fill=oiVermillion, draw=oiVermillion!60!black]

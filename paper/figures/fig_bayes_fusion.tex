@@ -8,7 +8,7 @@
     xlabel={strain component (arbitrary units)},
     ylabel={probability density},
     domain=-0.7:2.1, samples=200, ymin=0, ymax=2.1,
-    legend pos=north east,
+    legend below columns=2,
     legend style={font=\scriptsize},
     declare function={
       gauss(\x,\m,\s) = exp(-(\x-\m)^2/(2*\s^2))/(\s*sqrt(2*pi));

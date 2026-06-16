@@ -7,7 +7,6 @@
     xlabel={sensing direction angle from load axis (\si{\degree})},
     ylabel={effective $\kappa$},
     xtick={0,45,90,135,180},
-    legend pos=south east,
   ]
   \addplot[oiBlue, mark=none, line width=0.9pt]
     table[x=angle_deg, y=kappa_eff, col sep=comma] {../data/rosette.csv};

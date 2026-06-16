@@ -10,7 +10,7 @@
   \nextgroupplot[
       xlabel={analytical cut-off $k_{\max}$},
       ylabel={normalised impedance},
-      legend pos=south west, ymin=-0.1, ymax=0.4,
+      ymin=-0.1, ymax=0.4,
     ]
     \addplot[oiBlue, mark=*, mark size=1.4pt]
       table[x=kmax, y=Xnorm, col sep=comma] {../data/kmax_conv.csv};
