@@ -45,6 +45,9 @@ docs/
 pbf/
 mlhp/
 
+# Local analysis scripts (environment-specific data paths; not part of the published project)
+experiments/
+
 # LaTeX build artifacts
 *.aux
 *.bbl
