@@ -31,6 +31,11 @@ from .equilibrium import (
     free_surface_operator,
     close_out_of_plane,
 )
+from .mlhp_equilibrium import (
+    EigenstrainEquilibrium,
+    plane_strain_stiffness,
+    HAVE_MLHP,
+)
 
 __all__ = [
     "ElastoResistivityModel",
@@ -51,4 +56,7 @@ __all__ = [
     "EquilibriumConstrainedInverter",
     "free_surface_operator",
     "close_out_of_plane",
+    "EigenstrainEquilibrium",
+    "plane_strain_stiffness",
+    "HAVE_MLHP",
 ]

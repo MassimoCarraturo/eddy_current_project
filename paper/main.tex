@@ -565,7 +565,8 @@ with Poisson ratio $\nu$. For a build whose residual field varies mainly through
 the height (laterally homogeneous), interior equilibrium propagates this
 plane-stress state to every depth, so \cref{eq:closure} holds through the column;
 lateral gradients make $\sigma_{zz}$ nonzero and require the full elastic
-boundary-value problem, the natural role of the process simulation.
+boundary-value problem, the natural role of the process simulation, which we
+discharge next.
 \Cref{eq:closure} is three linear constraints on $\eps_{\mathrm v}$; stacking them
 with the measurement map renders the rank-deficient inverse problem full-rank, so
 an in-plane rosette resolves all six components --- three from data, three from
@@ -586,6 +587,41 @@ thermal contributions to the conductivity.
   per component; equilibrium lifts the unobserved $zz,yz,xz$ from near zero to
   one.}
   \label{fig:equilibrium}
+\end{figure}
+
+\paragraph{From a surface identity to field equilibrium} \Cref{eq:closure} is a
+pointwise relation on the free surface; in the interior it holds only where the
+residual state is laterally uniform. Over the clamped baseplate that anchors every
+LPBF part, and near overhangs and melt-pool boundaries, $\sigma_{zz}$ no longer
+vanishes below the surface and the closure drifts. We make this quantitative by
+solving the balance law $\nabla\!\cdot\!\sig=\bm0$ on a vertical $(x,z)$ slice with
+the \texttt{mlhp} hp-finite-element
+kernel.\footnote{\url{https://gitlab.com/hpfem/code/mlhp}} A laterally varying
+in-plane eigenstrain that vanishes on the free faces drives the residual
+state---reducing the Mura problem to a single equivalent body force
+$\bm b=-\nabla\!\cdot\!\sig^{\ast}$ with the base clamped---so the solve stands in
+transparently for the thermomechanical twin. At the traction-free top the
+finite-element field reproduces \cref{eq:closure} to within \SI{0.2}{\percent},
+but \cref{fig:equilibrium_field} shows the surface closure parting from the
+equilibrated profile with depth: the error reaches ${\approx}\,\SI{87}{\percent}$
+of $\varepsilon_{zz}$ at mid-height and inverts in sign over the lower quarter,
+where $|\sigma_{zz}|$ has climbed by nearly four orders of magnitude from its
+surface value. The field solve recovers $\varepsilon_{zz}$ throughout. The
+operational reading sharpens accordingly: a surface rosette fixes the in-plane
+strain, and an equilibrium engine---the algebraic closure at the surface, the full
+boundary-value problem beneath it---supplies the out-of-plane component.
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics{fig_equilibrium_field}
+  \caption{Field-level equilibrium beats the surface closure with depth. Left: the
+  out-of-plane strain $\varepsilon_{zz}$ along a build-height column ($x=W/2$) ---
+  the \texttt{mlhp} finite-element equilibrium solve (line) versus the per-column
+  plane-stress closure \eqref{eq:closure} fed the in-plane $\varepsilon_{xx}$
+  (markers). They agree at the traction-free top and part with depth. Right: the
+  normalised $\sigma_{zz}$, which vanishes only at the free surface --- the reason
+  the closure is a surface identity, not a volume law.}
+  \label{fig:equilibrium_field}
 \end{figure}
 
 \paragraph{Feasibility on LPBF 316L} Three physical realities set the
@@ -632,7 +668,8 @@ Two limitations bound the present study. Out-of-plane observability is weak from
 the build surface; mechanical equilibrium closes much of the gap --- the
 free-surface condition \eqref{eq:closure} recovers $\varepsilon_{zz}$ from the
 in-plane rosette, and the bulk field with lateral gradients follows from the full
-elastic solve --- but this transfers the burden to a clean separation of elastic
+elastic solve (\cref{fig:equilibrium_field}) --- but this transfers the burden to
+a clean separation of elastic
 strain from cold-work and thermal effects. And the elastoresistivity constants
 are calibrated
 only up to one uniaxial projection; multi-orientation tests are needed to

@@ -20,6 +20,10 @@ env/
 # Local-only outputs
 docs/
 
+# External reference libraries (cloned for reference, not part of this project)
+pbf/
+mlhp/
+
 # LaTeX build artifacts
 *.aux
 *.bbl

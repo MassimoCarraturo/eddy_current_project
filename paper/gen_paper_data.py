@@ -259,6 +259,37 @@ print("  eq: zz resolved  data-only=%.2f  with-equilibrium=%.2f  (RMSE zz "
          rmse(rec_do[:, 2], eps_true_eq[:, 2]),
          rmse(rec_eq[:, 2], eps_true_eq[:, 2])))
 
+# ---- field-level equilibrium: closure breakdown with depth (mlhp FE) -------
+# A laterally varying residual field over a clamped baseplate makes sigma_zz
+# nonzero below the free surface, so the per-column plane-stress closure degrades
+# with depth. The full elastic BVP, solved with the mlhp hp-FEM kernel, recovers
+# eps_zz at every depth. Requires the optional mlhp backend; the committed CSV
+# lets the figure build without it.
+from src.tensor_model import HAVE_MLHP
+if HAVE_MLHP:
+    from src.tensor_model import EigenstrainEquilibrium
+    eqf = EigenstrainEquilibrium(E=1.0, nu=NU, eps0=-2.0e-3,
+                                 ncells=(12, 12), degree=4).solve()
+    zc2 = np.linspace(0.0, 1.0, 41)
+    res = [eqf.sample(0.5, z) for z in zc2]          # column at x = W/2
+    eps_col = np.array([r[0] for r in res])
+    sig_col = np.array([r[1] for r in res])
+    true_zz = eps_col[:, 1]
+    clos_zz = eqf.closure(eps_col[:, 0])             # closure from (noiseless) eps_xx
+    smax = np.abs(sig_col[:, 1]).max()
+    save_csv("eq_field_profile.csv",
+             ["z", "true_zz", "closure_zz", "sigma_zz_norm"],
+             list(zip(zc2, true_zz * 100, clos_zz * 100, sig_col[:, 1] / smax)))
+    jmid = len(zc2) // 2
+    print("  eq-field: |closure-truth|/|truth|  surface=%.2f  mid=%.2f  "
+          "base-quarter sign-flip=%s  |sigma_zz| int/surf=%.0fx"
+          % (abs(clos_zz[-1] - true_zz[-1]) / abs(true_zz[-1]),
+             abs(clos_zz[jmid] - true_zz[jmid]) / abs(true_zz[jmid]),
+             bool(np.any(np.sign(clos_zz[:10]) != np.sign(true_zz[:10]))),
+             smax / max(np.abs(sig_col[-1, 1]), 1e-30)))
+else:
+    print("  eq-field: skipped (mlhp not installed; using committed CSV)")
+
 # ---------------------------------------------------------------------------
 # 10. Pipeline reconstructed strain field (von Mises + volumetric)
 # ---------------------------------------------------------------------------
